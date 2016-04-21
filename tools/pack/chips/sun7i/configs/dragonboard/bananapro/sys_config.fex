@@ -978,7 +978,7 @@ sdc_d0              = port:PF01<2><1><2><default>
 sdc_d1              = port:PF00<2><1><2><default>
 sdc_d2              = port:PF05<2><1><2><default>
 sdc_d3              = port:PF04<2><1><2><default>
-sdc_det             = port:PH1<0><1><default><default>
+sdc_det             = port:PH10<0><1><default><default>
 sdc_use_wp          = 0
 sdc_wp              =
 sdc_isio            = 0
@@ -1250,7 +1250,7 @@ wifi_used          = 1
 wifi_sdc_id        = 3
 wifi_usbc_id       = 2
 wifi_usbc_type     = 1
-wifi_mod_sel       = 9
+wifi_mod_sel       = 7
 wifi_power         = ""
 
 ; 1 - bcm40181 sdio wifi gpio config

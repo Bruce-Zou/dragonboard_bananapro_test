@@ -952,6 +952,7 @@ static int misc_window_init(void)
     misc_window.window->SetOptions(misc_window.window, DWOP_KEEP_POSITION);
     #if 1
     // draw RGB 
+    /*
     rwidth = gwidth = misc_window.desc.width / 3;
     bxpos = rwidth + gwidth;
     bwidth = misc_window.desc.width - bxpos;
@@ -961,6 +962,85 @@ static int misc_window_init(void)
     DFBCHECK(misc_window.surface->FillRectangle(misc_window.surface, rwidth, 0, gwidth, misc_window.desc.height));
     DFBCHECK(misc_window.surface->SetColor(misc_window.surface, 0, 0, 0xff, 0xff));
     DFBCHECK(misc_window.surface->FillRectangle(misc_window.surface, bxpos, 0, bwidth, misc_window.desc.height));
+    */
+    rwidth = misc_window.desc.width / 36;
+
+    DFBCHECK(misc_window.surface->SetColor(misc_window.surface, 0xff, 0, 0, 0xff));
+    DFBCHECK(misc_window.surface->FillRectangle(misc_window.surface, 0, 0, rwidth*1, misc_window.desc.height));
+    DFBCHECK(misc_window.surface->SetColor(misc_window.surface, 0, 0xff, 0, 0xff));
+    DFBCHECK(misc_window.surface->FillRectangle(misc_window.surface, rwidth*1, 0, rwidth*2, misc_window.desc.height));
+    DFBCHECK(misc_window.surface->SetColor(misc_window.surface, 0, 0, 0xff, 0xff));
+    DFBCHECK(misc_window.surface->FillRectangle(misc_window.surface, rwidth*2, 0, rwidth*3, misc_window.desc.height));
+    DFBCHECK(misc_window.surface->SetColor(misc_window.surface, 0, 0, 0, 0xff));
+    DFBCHECK(misc_window.surface->FillRectangle(misc_window.surface, rwidth*3, 0, rwidth*4, misc_window.desc.height));
+    DFBCHECK(misc_window.surface->SetColor(misc_window.surface, 8, 8, 8, 0xff));
+    DFBCHECK(misc_window.surface->FillRectangle(misc_window.surface, rwidth*4, 0, rwidth*5, misc_window.desc.height));
+    DFBCHECK(misc_window.surface->SetColor(misc_window.surface, 16,16,16 , 0xff));
+    DFBCHECK(misc_window.surface->FillRectangle(misc_window.surface, rwidth*5, 0, rwidth*6, misc_window.desc.height));
+    DFBCHECK(misc_window.surface->SetColor(misc_window.surface, 24, 24, 24, 0xff));
+    DFBCHECK(misc_window.surface->FillRectangle(misc_window.surface, rwidth*6, 0, rwidth*7, misc_window.desc.height));
+    DFBCHECK(misc_window.surface->SetColor(misc_window.surface, 32, 32, 32, 0xff));
+    DFBCHECK(misc_window.surface->FillRectangle(misc_window.surface, rwidth*7, 0, rwidth*8, misc_window.desc.height));
+    DFBCHECK(misc_window.surface->SetColor(misc_window.surface, 40, 40, 40, 0xff));
+    DFBCHECK(misc_window.surface->FillRectangle(misc_window.surface, rwidth*8, 0, rwidth*9, misc_window.desc.height));
+    DFBCHECK(misc_window.surface->SetColor(misc_window.surface, 48, 48, 48, 0xff));
+    DFBCHECK(misc_window.surface->FillRectangle(misc_window.surface, rwidth*9, 0, rwidth*10, misc_window.desc.height));
+    DFBCHECK(misc_window.surface->SetColor(misc_window.surface, 56, 56, 56, 0xff));
+    DFBCHECK(misc_window.surface->FillRectangle(misc_window.surface, rwidth*10, 0, rwidth*11, misc_window.desc.height));
+    DFBCHECK(misc_window.surface->SetColor(misc_window.surface, 64, 64, 64, 0xff));
+    DFBCHECK(misc_window.surface->FillRectangle(misc_window.surface, rwidth*11, 0, rwidth*12, misc_window.desc.height));
+    DFBCHECK(misc_window.surface->SetColor(misc_window.surface, 72, 72, 72, 0xff));
+    DFBCHECK(misc_window.surface->FillRectangle(misc_window.surface, rwidth*12, 0, rwidth*13, misc_window.desc.height));
+    DFBCHECK(misc_window.surface->SetColor(misc_window.surface, 80, 80, 80, 0xff));
+    DFBCHECK(misc_window.surface->FillRectangle(misc_window.surface, rwidth*13, 0, rwidth*14, misc_window.desc.height));
+    DFBCHECK(misc_window.surface->SetColor(misc_window.surface, 88, 88, 88, 0xff));
+    DFBCHECK(misc_window.surface->FillRectangle(misc_window.surface, rwidth*14, 0, rwidth*15, misc_window.desc.height));
+    DFBCHECK(misc_window.surface->SetColor(misc_window.surface, 96, 96, 96, 0xff));
+    DFBCHECK(misc_window.surface->FillRectangle(misc_window.surface, rwidth*15, 0, rwidth*16, misc_window.desc.height));
+    DFBCHECK(misc_window.surface->SetColor(misc_window.surface, 104,104,104, 0xff));
+    DFBCHECK(misc_window.surface->FillRectangle(misc_window.surface, rwidth*16, 0, rwidth*17, misc_window.desc.height));
+    DFBCHECK(misc_window.surface->SetColor(misc_window.surface, 112,112,112, 0xff));
+    DFBCHECK(misc_window.surface->FillRectangle(misc_window.surface, rwidth*17, 0, rwidth*18, misc_window.desc.height));
+    DFBCHECK(misc_window.surface->SetColor(misc_window.surface, 120,120,120 , 0xff));
+    DFBCHECK(misc_window.surface->FillRectangle(misc_window.surface, rwidth*18, 0, rwidth*19, misc_window.desc.height));
+    DFBCHECK(misc_window.surface->SetColor(misc_window.surface, 128,128,128 , 0xff));
+    DFBCHECK(misc_window.surface->FillRectangle(misc_window.surface, rwidth*19, 0, rwidth*20, misc_window.desc.height));
+    DFBCHECK(misc_window.surface->SetColor(misc_window.surface,136,136,136, 0xff));
+    DFBCHECK(misc_window.surface->FillRectangle(misc_window.surface, rwidth*20, 0, rwidth*21, misc_window.desc.height));
+    DFBCHECK(misc_window.surface->SetColor(misc_window.surface,144,144,144, 0xff));
+    DFBCHECK(misc_window.surface->FillRectangle(misc_window.surface, rwidth*21, 0, rwidth*22, misc_window.desc.height));
+    DFBCHECK(misc_window.surface->SetColor(misc_window.surface, 152,152,152, 0xff));
+    DFBCHECK(misc_window.surface->FillRectangle(misc_window.surface, rwidth*22, 0, rwidth*23, misc_window.desc.height));
+    DFBCHECK(misc_window.surface->SetColor(misc_window.surface, 160,160,160 , 0xff));
+    DFBCHECK(misc_window.surface->FillRectangle(misc_window.surface, rwidth*23, 0, rwidth*24, misc_window.desc.height));
+    DFBCHECK(misc_window.surface->SetColor(misc_window.surface,168,168,168, 0xff));
+    DFBCHECK(misc_window.surface->FillRectangle(misc_window.surface, rwidth*24, 0, rwidth*25, misc_window.desc.height));
+    DFBCHECK(misc_window.surface->SetColor(misc_window.surface,176,176,176 , 0xff));
+    DFBCHECK(misc_window.surface->FillRectangle(misc_window.surface, rwidth*25, 0, rwidth*26, misc_window.desc.height));
+    DFBCHECK(misc_window.surface->SetColor(misc_window.surface,184,184,184, 0xff));
+    DFBCHECK(misc_window.surface->FillRectangle(misc_window.surface, rwidth*26, 0, rwidth*27, misc_window.desc.height));
+    DFBCHECK(misc_window.surface->SetColor(misc_window.surface, 192,192,192, 0xff));
+    DFBCHECK(misc_window.surface->FillRectangle(misc_window.surface, rwidth*27, 0, rwidth*28, misc_window.desc.height));
+    DFBCHECK(misc_window.surface->SetColor(misc_window.surface, 200,200,200 , 0xff));
+    DFBCHECK(misc_window.surface->FillRectangle(misc_window.surface, rwidth*28, 0, rwidth*29, misc_window.desc.height));
+    DFBCHECK(misc_window.surface->SetColor(misc_window.surface,208,208,208, 0xff));
+    DFBCHECK(misc_window.surface->FillRectangle(misc_window.surface, rwidth*29, 0, rwidth*30, misc_window.desc.height));
+    DFBCHECK(misc_window.surface->SetColor(misc_window.surface,216,216,216, 0xff));
+    DFBCHECK(misc_window.surface->FillRectangle(misc_window.surface, rwidth*30, 0, rwidth*31, misc_window.desc.height));
+    DFBCHECK(misc_window.surface->SetColor(misc_window.surface, 224,224,224, 0xff));
+    DFBCHECK(misc_window.surface->FillRectangle(misc_window.surface, rwidth*31, 0, rwidth*32, misc_window.desc.height));
+    DFBCHECK(misc_window.surface->SetColor(misc_window.surface, 232,232,232 , 0xff));
+    DFBCHECK(misc_window.surface->FillRectangle(misc_window.surface, rwidth*32, 0, rwidth*33, misc_window.desc.height));
+    DFBCHECK(misc_window.surface->SetColor(misc_window.surface, 240,240,240, 0xff));
+    DFBCHECK(misc_window.surface->FillRectangle(misc_window.surface, rwidth*33, 0, rwidth*34, misc_window.desc.height));
+    DFBCHECK(misc_window.surface->SetColor(misc_window.surface, 248,248,248, 0xff));
+    DFBCHECK(misc_window.surface->FillRectangle(misc_window.surface, rwidth*34, 0, rwidth*35, misc_window.desc.height));
+    DFBCHECK(misc_window.surface->SetColor(misc_window.surface,255,255,255, 0xff));
+    DFBCHECK(misc_window.surface->FillRectangle(misc_window.surface, rwidth*35, 0, rwidth*36, misc_window.desc.height));
+
+
+
+
     #else
     int i,h_d4;
     h_d4=misc_window.desc.height/3;

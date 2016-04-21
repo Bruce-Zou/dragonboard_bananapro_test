@@ -27,7 +27,7 @@
 
 #include "include/tinyalsa/asoundlib.h"
 
-
+#include <time.h> 
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -35,6 +35,8 @@
 #include <pthread.h>
 #include "dragonboard_inc.h"
 #include "drv_display_sun4i.h"
+
+#define random(x) (rand()%x) 
 
 #define ID_RIFF 0x46464952
 #define ID_WAVE 0x45564157
@@ -296,6 +298,7 @@ static int sound_play_stop;
 #define BUF_LEN   4096
 char *buf[BUF_LEN];
 
+
 static void *music_play(void *args)
 {
     char path[256];
@@ -306,10 +309,22 @@ static void *music_play(void *args)
     FILE *fp;
     
     db_msg("mictester:prepare play sound...\n");
+    /*
     if (script_fetch("mic", "music_file", (int *)path, sizeof(path) / 4)) {
         db_warn("mictester:unknown sound file, use default\n");
         strcpy(path, "/dragonboard/data/test48000.pcm");
-    }
+    }*/
+    int Num = 0;
+    srand((unsigned int)time(NULL));  
+    Num = random(3);
+    printf("Num=%d-------------------------------------------------------------------------   ", Num);  
+    if(Num == 0)
+        strcpy(path, "/dragonboard/data/test48000.pcm");
+    else if(Num == 1)
+        strcpy(path, "/dragonboard/data/test48000a.pcm");    
+    else if(Num == 2)
+        strcpy(path, "/dragonboard/data/test48000b.pcm");
+
     if (script_fetch("mic", "samplerate", &samplerate, 1)) {
         db_warn("mictester:unknown samplerate, use default #48000\n");
         samplerate = 48000;

@@ -1,0 +1,22 @@
+kernel_config: linux-3.4/sun7i_bananapro_dragonboard_defconfig 
+
+build:
+
+cd linux-3.4 
+cp sun7i_bananapro_dragonboard_defconfig .config 
+./build.sh sun7i_dragonboard 
+
+pack:
+./build.sh pack
+choose platform: 
+sun7i 
+choose filesystem:
+dragonboard 
+choose product:
+bananapro 
+
+
+firmware location:
+tools/pack/
+
+

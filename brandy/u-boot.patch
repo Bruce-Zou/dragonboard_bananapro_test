@@ -1,0 +1,14 @@
+diff --git a/u-boot-2011.09/common/main.c b/u-boot-2011.09/common/main.c
+index 57a5ef8..e95fc7c 100755
+--- a/u-boot-2011.09/common/main.c
++++ b/u-boot-2011.09/common/main.c
+@@ -255,7 +255,8 @@ static inline int abortboot(int bootdelay)
+ 		gd->flags &= ~GD_FLG_SILENT;
+ #endif
+ 
+-	return abort;
++//	return abort;
++	return 0;
+ }
+ # endif	/* CONFIG_AUTOBOOT_KEYED */
+ #endif	/* CONFIG_BOOTDELAY >= 0  */

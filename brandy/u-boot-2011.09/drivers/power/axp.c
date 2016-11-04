@@ -29,6 +29,10 @@
 #if defined(CONFIG_SUNXI_AXP20)
 #  include <power/axp20_reg.h>
 #endif
+
+#if defined(CONFIG_SUNXI_AXP15)
+#  include <power/axp15_reg.h>
+#endif
 #include "axp.h"
 #include <pmu.h>
 
@@ -39,6 +43,10 @@ sunxi_axp_dev_t  *sunxi_axp_dev[SUNXI_AXP_DEV_MAX] = {(void *)(-1)};
 extern int axp22_probe(void);
 extern int axp20_probe(void);
 extern int axp15_probe(void);
+
+int AXP_CHIP_TYPE = -1;
+
+
 /*
 ************************************************************************************************************
 *
@@ -68,11 +76,11 @@ int axp_probe(void)
 		/* pmu type AXP22X */
 		tick_printf("PMU: AXP22x found\n");
 		ret ++;
+		sunxi_axp_dev[PMU_TYPE_22X] = &sunxi_axp_22;
+		sunxi_axp_dev[0] = &sunxi_axp_22;
+		AXP_CHIP_TYPE = PMU_TYPE_22X;
+		return ret;
 	}
-	sunxi_axp_dev[PMU_TYPE_22X] = &sunxi_axp_22;
-#if (CONFIG_SUNXI_AXP_MAIN == PMU_TYPE_22X)
-	sunxi_axp_dev[0] = &sunxi_axp_22;
-#endif
 #endif
 
 #if defined(CONFIG_SUNXI_AXP20)
@@ -84,12 +92,12 @@ int axp_probe(void)
 	{
 		/* pmu type AXP22X */
 		tick_printf("PMU: AXP20x found\n");
-		ret ++;
+		ret ++; 
+		sunxi_axp_dev[PMU_TYPE_20X] = &sunxi_axp_20;
+		sunxi_axp_dev[0] = &sunxi_axp_20;
+		AXP_CHIP_TYPE = PMU_TYPE_20X;
+		return ret;
 	}
-	sunxi_axp_dev[PMU_TYPE_20X] = &sunxi_axp_20;
-#if (CONFIG_SUNXI_AXP_MAIN == PMU_TYPE_20X)
-	sunxi_axp_dev[0] = &sunxi_axp_20;
-#endif
 #endif
 
 #if defined(CONFIG_SUNXI_AXP15)
@@ -101,12 +109,12 @@ int axp_probe(void)
 	{
 		/* pmu type AXP15X */
 		tick_printf("PMU: AXP15x found\n");
-		ret ++;
+		ret ++; 
+		sunxi_axp_dev[PMU_TYPE_15X] = &sunxi_axp_15;
+		sunxi_axp_dev[0] = &sunxi_axp_15;
+		AXP_CHIP_TYPE = PMU_TYPE_15X;
+		return ret;
 	}
-	sunxi_axp_dev[PMU_TYPE_15X] = &sunxi_axp_15;
-#if (CONFIG_SUNXI_AXP_MAIN == PMU_TYPE_15X)
-	sunxi_axp_dev[0] = &sunxi_axp_15;
-#endif
 #endif
 
 	return ret;
@@ -207,12 +215,7 @@ int axp_probe_startup_cause(void)
     	{
     		return AXP_DCIN_EXIST;
     	}
-		return AXP_VBUS_DCIN_NOT_EXIST;  // return if dont have external power supply
-	}
-	else if(buffer_value == PMU_PRE_FASTBOOT_MODE)
-	{
-		tick_printf("pre fastboot mode\n");
-		return -1;
+		return 0;
 	}
 	//获取 开机原因，是按键触发，或者插入电压触发
 	poweron_reason = sunxi_axp_dev[0]->probe_this_poweron_cause();
@@ -238,62 +241,6 @@ int axp_probe_startup_cause(void)
 *
 *                                             function
 *
-*    函数名称：axp_probe_startup_check_factory_mode
-*
-*    参数列表：
-*
-*    返回值  ：
-*
-*    说明    ：用于样机恢复出厂设置后，第一次启动系统要求，要在USB或火牛存在情况下才能按按键启动，启动后清除标志
-*
-*
-************************************************************************************************************
-*/
-int axp_probe_factory_mode(void)
-{
-	int buffer_value, status;
-	int poweron_reason;
-
-	buffer_value = sunxi_axp_dev[0]->probe_pre_sys_mode();
-
-	if(buffer_value == PMU_PRE_FACTORY_MODE)	//factory mode: need the power key and dc or vbus
-	{
-		printf("factory mode detect\n");
-		status = sunxi_axp_dev[0]->probe_power_status();
-		if(status > 0)  //has the dc or vbus
-		{
-			//获取 开机原因，是按键触发，或者插入电压触发
-			poweron_reason = sunxi_axp_dev[0]->probe_this_poweron_cause();
-			if(poweron_reason == AXP_POWER_ON_BY_POWER_KEY)
-			{
-				//set the system next powerom status as 0x0e(the system mode)
-				printf("factory mode release\n");
-				sunxi_axp_dev[0]->set_next_sys_mode(PMU_PRE_SYS_MODE);
-			}
-			else
-			{
-				printf("factory mode: try to poweroff without power key\n");
-				axp_set_hardware_poweron_vol();  //poweroff
-				axp_set_power_off();
-				for(;;);
-			}
-		}
-		else
-		{
-			printf("factory mode: try to poweroff without power in\n");
-			axp_set_hardware_poweroff_vol();  //poweroff
-			axp_set_power_off();
-			for(;;);
-		}
-	}
-
-	return 0;
-}
-/*
-************************************************************************************************************
-*
-*                                             function
-*
 *    函数名称：
 *
 *    参数列表：
@@ -311,7 +258,8 @@ int axp_set_hardware_poweron_vol(void) //设置开机之后，PMU硬件关机电压为2.9V
 
 	if(script_parser_fetch("pmu_para", "pmu_pwron_vol", &vol_value, 1))
 	{
-		puts("set power on vol to default\n");
+		puts("boot power:unable to find power on vol set\n");
+		puts("set to default\n");
 	}
 
 	return sunxi_axp_dev[0]->set_power_onoff_vol(vol_value, 1);
@@ -338,7 +286,8 @@ int axp_set_hardware_poweroff_vol(void) //设置关机之后，PMU硬件下次开机电压为3.3
 
 	if(script_parser_fetch("pmu_para", "pmu_pwroff_vol", &vol_value, 1))
 	{
-		puts("set power off vol to default\n");
+		puts("boot power:unable to find power off vol set\n");
+		puts("set to default\n");
 	}
 
 	return sunxi_axp_dev[0]->set_power_onoff_vol(vol_value, 0);
@@ -382,26 +331,6 @@ int  axp_set_power_off(void)
 int axp_set_next_poweron_status(int value)
 {
 	return sunxi_axp_dev[0]->set_next_sys_mode(value);
-}
-/*
-************************************************************************************************************
-*
-*                                             function
-*
-*    函数名称：
-*
-*    参数列表：
-*
-*    返回值  ：
-*
-*    说明    ：
-*
-*
-************************************************************************************************************
-*/
-int axp_probe_pre_sys_mode(void)
-{
-	return sunxi_axp_dev[0]->probe_pre_sys_mode();
 }
 /*
 ************************************************************************************************************
@@ -742,94 +671,108 @@ int axp_set_power_supply_output(void)
 	int  power_vol, power_index = 0;
 
 #if defined(CONFIG_SUNXI_AXP22)
-    power_supply_hd = script_parser_fetch_subkey_start("power_sply");
-    if(!power_supply_hd)
-    {
-        printf("unable to set power supply\n");
-
-		return -1;
-	}
-	do
+	if (AXP_CHIP_TYPE == PMU_TYPE_22X)
 	{
-		memset(power_name, 0, 16);
-		ret = script_parser_fetch_subkey_next(power_supply_hd, power_name, &power_vol, &power_index);
-		if(ret < 0)
+		power_supply_hd = script_parser_fetch_subkey_start("power_sply");
+		if(!power_supply_hd)
 		{
-			printf("find power_sply to end\n");
+			printf("unable to set power supply\n");
 
-            return 0;
-        }
-        printf("%s = %d\n", power_name, power_vol);
-        onoff = -1;
-        if((power_vol>>16) & 0xffff)
-        {
-            onoff = 1;
-        }
-        if(sunxi_axp_dev[0]->set_supply_status_byname(power_name, power_vol & 0xffff, onoff))
-        {
-            printf("axp set %s to %d failed\n", power_name, power_vol);
-        }
-    }
-    while(1);
-#endif
+			return -1;
+		}
+		do
+		{
+			memset(power_name, 0, 16);
+			ret = script_parser_fetch_subkey_next(power_supply_hd, power_name, &power_vol, &power_index);
+			if(ret < 0)
+			{
+				printf("find power_sply to end\n");
+
+				return 0;
+			}
+			printf("%s = %d\n", power_name, power_vol);
+			onoff = -1;
+			if((power_vol>>16) & 0xffff)
+			{
+				onoff = 1;
+			}
+			if(sunxi_axp_dev[0]->set_supply_status_byname(power_name, power_vol & 0xffff, onoff))
+			{
+				printf("axp set %s to %d failed\n", power_name, power_vol);
+			}
+		}
+		while(1);
+	}
+#endif 
 #if defined(CONFIG_SUNXI_AXP20)
-    power_supply_hd = script_parser_fetch_subkey_start("target");
-    if(!power_supply_hd)
+	if (AXP_CHIP_TYPE == PMU_TYPE_20X)
     {
-        printf("unable to set power supply\n");
+		power_supply_hd = script_parser_fetch_subkey_start("target");
+		if(!power_supply_hd)
+		{
+			printf("unable to set power supply\n");
 
-        return -1;
-    }
-    do
-    {
-        memset(power_name, 0, 16);
-        ret = script_parser_fetch_subkey_next(power_supply_hd, power_name, &power_vol, &power_index);
-        if(ret < 0)
-        {
-            printf("find power_sply to end\n");
+			return -1;
+		}
+		do
+		{
+			memset(power_name, 0, 16);
+			ret = script_parser_fetch_subkey_next(power_supply_hd, power_name, &power_vol, &power_index);
+			if(ret < 0)
+			{
+				printf("find power_sply to end\n");
 
-            return 0;
-        }
-        printf("%s = %d\n", power_name, power_vol);
-        onoff = -1;
-        if((power_vol>>16) & 0xffff)
-        {
-            onoff = 1;
-        }
-        if(sunxi_axp_dev[0]->set_supply_status_byname(power_name, power_vol & 0xffff, onoff))
-        {
-            printf("axp set %s to %d failed\n", power_name, power_vol);
-        }
-    }
-    while(1);
+				return 0;
+			}
+			printf("%s = %d\n", power_name, power_vol);
+			onoff = -1;
+			if((power_vol>>16) & 0xffff)
+			{
+				onoff = 1;
+			}
+			if(sunxi_axp_dev[0]->set_supply_status_byname(power_name, power_vol & 0xffff, onoff))
+			{
+				printf("axp set %s to %d failed\n", power_name, power_vol);
+			}
+		}
+		while(1);
+	}
 #endif
 #if defined(CONFIG_SUNXI_AXP15)
-    power_supply_hd = script_parser_fetch_subkey_start("axp15_para");
-    if(!power_supply_hd)
-    {
-        printf("unable to set power supply\n");
+	if (AXP_CHIP_TYPE == PMU_TYPE_15X)
+	{
+		power_supply_hd = script_parser_fetch_subkey_start("axp15_para");
+		if(!power_supply_hd)
+		{
+			printf("unable to set power supply\n");
+	
+			return -1;
+		}
+		do
+		{
+			memset(power_name, 0, 16);
+			ret = script_parser_fetch_subkey_next(power_supply_hd, power_name, &power_vol, &power_index);
+			if(ret < 0)
+			{
+				printf("find power_sply to end\n");
+	
+				return 0;
+			}
+			printf("%s = %d\n", power_name, power_vol);
+			onoff = -1;
+			if((power_vol>>16) & 0xffff)
+			{
+				onoff = 1;
+			}
+			if(sunxi_axp_dev[0]->set_supply_status_byname(power_name, power_vol & 0xffff, onoff))
+			{
+				printf("axp set %s to %d failed\n", power_name, power_vol);
+			}
+		}
+		while(1);
+	}
+#endif 
 
-        return -1;
-    }
-    do
-    {
-        memset(power_name, 0, 16);
-        ret = script_parser_fetch_subkey_next(power_supply_hd, power_name, &power_vol, &power_index);
-        if(ret < 0)
-        {
-            printf("find power_sply to end\n");
-
-            return 0;
-        }
-        printf("%s = %d\n", power_name, power_vol);
-        onoff = 1;
-        if(sunxi_axp_dev[0]->set_supply_status_byname(power_name, power_vol & 0xffff, onoff))
-        {
-            printf("axp set %s to %d failed\n", power_name, power_vol);
-        }
-    }
-    while(1);
-#endif
     return 0;
 }
 /*
@@ -855,7 +798,7 @@ int axp_probe_power_supply_condition(void)
 
 	//检测电压，决定是否开机
 	dcin_exist = sunxi_axp_dev[0]->probe_power_status();
-
+	
 #ifdef DEBUG
     printf("dcin_exist = %x\n", dcin_exist);
 #endif

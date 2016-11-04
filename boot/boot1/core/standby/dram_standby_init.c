@@ -202,13 +202,6 @@ void mctl_setup_dram_clock(__u32 clk)
 
     //setup DRAM PLL
     reg_val = mctl_read_w(DRAM_CCM_SDRAM_PLL_REG);
-    
-    //DISABLE PLL before configuration by yeshaozhen at 20130717
-    reg_val &= ~(0x1<<31);  	//PLL disable before configure
-    mctl_write_w(DRAM_CCM_SDRAM_PLL_REG, reg_val);
-    standby_delay(0x1000);
-    //20130717 end
-    
     reg_val &= ~0x3;
     reg_val |= 0x1;                                             //m factor
     reg_val &= ~(0x3<<4);
@@ -255,13 +248,6 @@ __s32 DRAMC_init(boot_dram_para_t *para)
         //dram parameter is invalid
         return 0;
     }
-    
-    //close AHB clock for DRAMC,--added by yeshaozhen at 20130715
-    reg_val = mctl_read_w(DRAM_CCM_AHB_GATE_REG);
-    reg_val &= ~(0x3<<14);
-    mctl_write_w(DRAM_CCM_AHB_GATE_REG, reg_val);
-		standby_delay(0x200);
-		//20130715 AHB close end
 
     //setup DRAM relative clock
     mctl_setup_dram_clock(para->dram_clk);

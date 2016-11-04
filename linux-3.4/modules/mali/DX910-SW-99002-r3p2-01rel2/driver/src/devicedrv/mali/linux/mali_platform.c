@@ -26,11 +26,10 @@
 #include <mach/sys_config.h>
 #include <mach/includes.h>
 #include <mach/powernow.h>
-#include <mach/dram-freq.h>
 #include <linux/suspend.h>
 
 #define CONFIG_GPU_DVFS
-//#define CONFIG_DYNAMIC_GPU_FREQ
+#define CONFIG_DYNAMIC_GPU_FREQ
 
 static int mali_clk_div    = 1;
 static int mali_clk_flag   = 0;
@@ -297,8 +296,6 @@ _mali_osk_errcode_t mali_platform_power_mode_change(mali_power_mode power_mode)
     }
     MALI_SUCCESS;
 }
-extern void mali_dev_pause(bool *power_is_on);
-extern void mali_dev_resume(void);
 
 int sun7i_mali_platform_device_register(void)
 {
@@ -313,10 +310,10 @@ int sun7i_mali_platform_device_register(void)
 
     err = platform_device_add_resources(&mali_gpu_device, mali_gpu_resources, sizeof(mali_gpu_resources) / sizeof(mali_gpu_resources[0]));
     if (0 == err){
-        //mali_gpu_data.dedicated_mem_start = gpu_addr.paddr - PLAT_PHYS_OFFSET;
-        //mali_gpu_data.dedicated_mem_size = gpu_addr.size;
-        mali_gpu_data.fb_start = ION_CARVEOUT_MEM_BASE;
-        mali_gpu_data.fb_size = ION_CARVEOUT_MEM_SIZE;
+        mali_gpu_data.dedicated_mem_start = gpu_addr.paddr - PLAT_PHYS_OFFSET;
+        mali_gpu_data.dedicated_mem_size = gpu_addr.size;
+        mali_gpu_data.fb_start = fb_addr_para.fb_paddr;
+        mali_gpu_data.fb_size = fb_addr_para.fb_size;
         err = platform_device_add_data(&mali_gpu_device, &mali_gpu_data, sizeof(mali_gpu_data));
         if(0 == err){
             err = platform_device_register(&mali_gpu_device);
@@ -596,66 +593,13 @@ static struct notifier_block powernow_notifier = {
 	.notifier_call = powernow_notifier_call,
 };
 
-#define DRAM_VOLT_MIN (1050000)
-static int mali_dram_notify(struct notifier_block *nb, unsigned long event, void *cmd)
-{
-    int dram_freq = (int)cmd;
-    int ret = 0;
-    unsigned int mode;
-    mode = (cur_mode > 4)?1:cur_mode;
-    if (event == DRAMFREQ_NOTIFY_PREPARE){
-        mali_dev_pause(0);
-        suspend_flag = 1;
-        cancel_work_sync(&mali_dvfs_work);
-        if (dram_freq && mali_regulator){
-            //check the mode valid
-            mali_dvfs_change_status(mali_regulator,
-                                    mali_dvfs_table[mode].vol_max,
-                                    h_gpu_pll,
-                                    MALI_CLK_MAX,//if we are now in normal mode and set freq to MALI_CLK_MAX,fucking that!
-                                    h_mbus_clk,
-                                    mali_dvfs_table[mode].mbus_freq);
-        }
-    }
-    if (event == DRAMFREQ_NOTIFY_DONE){
-        mali_dev_resume();
-        if (cmd == 0 && mali_regulator){
-            mali_dvfs_change_status(mali_regulator,
-                                    DRAM_VOLT_MIN,
-                                    h_gpu_pll,
-                                    MALI_CLK_MIN,//if we are now in normal mode and set freq to MALI_CLK_MAX,fucking that!
-                                    h_mbus_clk,
-                                    mali_dvfs_table[mode].mbus_freq);
-        }else{
-            suspend_flag = 0;
-        }
-    }
-    return ret;
-}
-
-static struct notifier_block dram_notifier = {
-	.notifier_call = mali_dram_notify,
-};
-
 static int mali_pm_notify(struct notifier_block *nb, unsigned long event, void *dummy)
 {
-    int ret = 0;
-    unsigned int mode;
     if (event == PM_SUSPEND_PREPARE) {
         suspend_flag = 1;
         cancel_work_sync(&mali_dvfs_work);
     } else if (event == PM_POST_SUSPEND) {
         suspend_flag = 0;
-        if (mali_regulator){
-            //check the mode valid
-            mode = (cur_mode > 4)?1:cur_mode;
-            mali_dvfs_change_status(mali_regulator,
-                                    mali_dvfs_table[mode].vol_max,
-                                    h_gpu_pll,
-                                    mali_dvfs_table[mode].freq_max,
-                                    h_mbus_clk,
-                                    mali_dvfs_table[mode].mbus_freq);
-        }
     }
     return NOTIFY_OK;
 }
@@ -671,7 +615,13 @@ static int mali_freq_init(void)
 
 	sysfs_create_group(&mali_gpu_device.dev.kobj,
 						 &sunxi_reg_attribute_group);
-    mali_regulator = regulator_get(NULL, "axp20_ddr");
+						 
+	#if defined (CONFIG_AW_AXP15)
+		mali_regulator = regulator_get(NULL, "axp15_ddr2");
+	#endif
+	#if defined (CONFIG_AW_AXP20)
+		mali_regulator = regulator_get(NULL, "axp20_ddr");
+	#endif
 	if (IS_ERR(mali_regulator)) {
 	    printk("get mali regulator failed\n");
         mali_regulator = NULL;
@@ -708,7 +658,13 @@ static int mali_freq_init(void)
 		}
 	} else
 		pr_info("%s(%d): get mali_para->mali_used failed!\n", __func__, __LINE__);
-   if (SCIRPT_ITEM_VALUE_TYPE_INT == script_get_item("target","dcdc3_vol", &mali_vol)){
+#if defined (CONFIG_AW_AXP15) 
+		if (SCIRPT_ITEM_VALUE_TYPE_INT == script_get_item("target","dcdc4_vol", &mali_vol)){
+#endif 
+
+#if defined (CONFIG_AW_AXP20) 
+		if (SCIRPT_ITEM_VALUE_TYPE_INT == script_get_item("target","dcdc3_vol", &mali_vol)){
+#endif
         if (mali_vol.val > 0){
             mali_dvfs_table[SW_POWERNOW_PERFORMANCE].vol_max = mali_vol.val*1000;
             mali_dvfs_table[SW_POWERNOW_NORMAL].vol_max = mali_vol.val*1000;
@@ -716,7 +672,6 @@ static int mali_freq_init(void)
    }
     init_mali_dvfs();
     register_sw_powernow_notifier(&powernow_notifier);
-    dramfreq_register_notifier(&dram_notifier);
     register_pm_notifier(&mali_pm_notifier);
 
 	return 0;

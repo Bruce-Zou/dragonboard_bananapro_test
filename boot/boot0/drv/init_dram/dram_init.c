@@ -18,11 +18,8 @@
 *	  2013-03-06	  CPL		  1.10	  use dram_tpr4 bit1 as DQ & CA mode setup
 *	  2013-03-08	  CPL		  1.11	  fix the problem [EFR DRAM can't not exit from super selfrefresh]
 *     2013-03-15      CPL         1.12    modify mbus source to PLL6*2 /4 = 300MHz
-*     2013-03-15      CPL         1.13    read zq value from config para to fix superstandby bug.
-i
+*     2013-03-15      CPL         1.13    read zq value from config para to fix superstandby bug.i
 *     2013-04-10      CPL         1.14    modify code for super standby
-*			2013-06-24			YeShaozhen	1.15		add spread spectrum funciton, use dram_tpr4[2] configure
-*			2013-06-28			YeShaozhen	1.16		DRAM frequency jump, use dram_tpr4[3] configure
 *********************************************************************************************************
 */
 #include "boot0_i.h"
@@ -216,33 +213,9 @@ void mctl_configure_hostport(void)
 	mctl_write_w(SDR_HPCR + (31<<2), hpcr_value[i]);
 }
 
-void mctl_setup_dram_clock(__u32 clk, __u32 pll_tun_en)
+void mctl_setup_dram_clock(__u32 clk)
 {
     __u32 reg_val;
-    
-    //DISABLE PLL before configuration by yeshaozhen at 20130711
-    reg_val = mctl_read_w(DRAM_CCM_SDRAM_PLL_REG);
-    reg_val &= ~(0x1<<31);  	//PLL disable before configure
-    mctl_write_w(DRAM_CCM_SDRAM_PLL_REG, reg_val);
-    delay_us(20);
-    //20130711 end
-    
-    if(pll_tun_en)
-    {
-	      //spread spectrum
-		    reg_val	= 0x00;
-		    reg_val	|= (0x0<<17);	//spectrum freq
-		    reg_val	|= 0x3333;	//BOT
-		    reg_val	|= (0x113<<20);	//STEP
-		    reg_val	|= (0x2<<29);	//MODE Triangular
-		    mctl_write_w(DRAM_CCM_SDRAM_PLL_TUN2, reg_val);
-		    reg_val	|= (0x1<<31);	//enable spread spectrum
-		    mctl_write_w(DRAM_CCM_SDRAM_PLL_TUN2, reg_val);
-  	}
-  	else
-  	{
-  	    mctl_write_w(DRAM_CCM_SDRAM_PLL_TUN2, 0x00000000);
-  	}
 
     //setup DRAM PLL
     reg_val = mctl_read_w(DRAM_CCM_SDRAM_PLL_REG);
@@ -302,20 +275,9 @@ __s32 DRAMC_init(__dram_para_t *para)
     	//dram parameter is invalid
     	return 0;
 	}
-    
-    //end PLL close 20130710
-    //close AHB clock for DRAMC,--added by yeshaozhen at 20130708
-    reg_val = mctl_read_w(DRAM_CCM_AHB_GATE_REG);
-    reg_val &= ~(0x3<<14);
-    mctl_write_w(DRAM_CCM_AHB_GATE_REG, reg_val);
-	delay_us(10);
-	//20130708 AHB close end
-    
+
 	//setup DRAM relative clock
-	if(para->dram_tpr4 & 0x4)
-		mctl_setup_dram_clock(para->dram_clk,1);	//PLL tunning enable
-	else
-		mctl_setup_dram_clock(para->dram_clk,0);	
+	mctl_setup_dram_clock(para->dram_clk);
 
 
 	mctl_set_drive();
@@ -325,11 +287,7 @@ __s32 DRAMC_init(__dram_para_t *para)
 
 
 	mctl_itm_disable();
-	
-	//if( (para->dram_clk) > 300)
-		mctl_enable_dll0(para->dram_tpr3);
-	//else
-	//	mctl_disable_dll();
+	mctl_enable_dll0(para->dram_tpr3);
 
 	//configure external DRAM
 	reg_val = 0;
@@ -407,8 +365,7 @@ __s32 DRAMC_init(__dram_para_t *para)
 	
 	mctl_delay(0x10);
     while(mctl_read_w(SDR_CCR) & (0x1U<<31)) {};
-    
-	//if( (para->dram_clk) > 300)
+
     mctl_enable_dllx(para->dram_tpr3);
     //set I/O configure register
 //    reg_val = 0x00cc0000;
@@ -922,19 +879,6 @@ __s32 DRAMC_to_card_init(__dram_para_t *para)
 	__u32 start_adr, end_adr;
 	__u32 bonding_id;
 	__u32 reg_val;
-	
-	
-	//reset the controller logic------------------added by YeShaozhen at 20130707 for custonmer problem
-	//close it first
-	reg_val = mctl_read_w(DRAM_CCM_AHB_GATE_REG);
-	reg_val &= ~(0x3<<14);
-	mctl_write_w(DRAM_CCM_AHB_GATE_REG, reg_val);
-	delay_us(10);
-	//then open it
-	reg_val |= 0x3<<14;
-	mctl_write_w(DRAM_CCM_AHB_GATE_REG, reg_val);
-	delay_us(10);
-	//reset controller logic end
 
 	//check whether scan dram size
 	//below scan dram parameter
@@ -1073,196 +1017,9 @@ __s32 DRAMC_to_card_init(__dram_para_t *para)
 }
 #endif
 
-//*****************************************************************************add for freq jump at 20120628
-void mem_delay(unsigned int count)
-{
-	unsigned int i=0;
-
-	for(i=0; i<count; i++)
-		continue;
-}
-
-//*****************************************************************************
-//	void mctl_self_refresh_entry()
-//  Description:	Enter into self refresh state
-//
-//	Arguments:		None
-//
-//	Return Value:	None
-//*****************************************************************************
-void mctl_self_refresh_entry(void)
-{
-	__u32 reg_val;
-
-	//disable auto refresh
-	reg_val = mctl_read_w(SDR_DRR);
-	reg_val |= 0x1U<<31;
-	mctl_write_w(SDR_DRR, reg_val);
-
-	reg_val = mctl_read_w(SDR_DCR);
-	reg_val &= ~(0x1fU<<27);
-	reg_val |= 0x12U<<27;
-	mctl_write_w(SDR_DCR, reg_val);
-
-	//check whether command has been executed
-	while( mctl_read_w(SDR_DCR)& (0x1U<<31) );
-	mem_delay(1000);
-}
-
-//**************************************************
-void setup_dram_pll(__u32 clk)
-{
-    __u32 reg_val;
-
-    //setup DRAM PLL
-    reg_val = mctl_read_w(DRAM_CCM_SDRAM_PLL_REG);
-    reg_val &= ~(1U<<31);
-    mctl_write_w(DRAM_CCM_SDRAM_PLL_REG, reg_val);		//disable PLL
-    
-    mem_delay(10000);
-
-    reg_val &= ~0x3;
-    reg_val |= 0x1;                                             //m factor
-    reg_val &= ~(0x3<<4);
-    reg_val |= 0x1<<4;                                          //k factor
-    reg_val &= ~(0x1f<<8);
-    reg_val |= ((clk/24)&0x1f)<<8;                              //n factor
-    reg_val &= ~(0x3<<16);
-    reg_val |= 0x1<<16;                                         //p factor
-    reg_val &= ~(0x1<<29);                                      //clock output disable
-    reg_val |= (__u32)0x1<<31;                                  //PLL En
-    mctl_write_w(DRAM_CCM_SDRAM_PLL_REG, reg_val);
-    //mctl_delay(0x100000);
-    mem_delay(10000);
-    reg_val = mctl_read_w(DRAM_CCM_SDRAM_PLL_REG);
-    reg_val |= 0x1<<29;
-    mctl_write_w(DRAM_CCM_SDRAM_PLL_REG, reg_val);
-    
-    mem_delay(10000);
-
-}
-//******************************************************
-//	dram_freq_jum(unsigned char);
-//	used for frequency jump, add by yeshaozhen at 20130628
-//******************************************************
-__s32	dram_freq_jum(unsigned char freq_p,__dram_para_t *dram_para)
-{
-	__u32 reg_val = 0;
-	
-	if((dram_para->dram_tpr4 & 0x8) == 0)	//freq jump not allow
-		return 0;
-		
-	if(freq_p == 0)	//the first calibration frequency point
-	{
-			mctl_self_refresh_entry();	//DRAMC_enter_selfrefresh();
-			//turn off DLL
-			mctl_disable_dll();
-			DRAMC_clock_output_en(0);	//dram clock off
-
-			setup_dram_pll(120);
-			mctl_itm_disable();
-			mctl_enable_dll0(dram_para->dram_tpr3);
-			mctl_enable_dllx(dram_para->dram_tpr3);
-
-			DRAMC_clock_output_en(1);	//dram clock on
-
-			//set refresh period
-			DRAMC_set_autorefresh_cycle(120);
-
-			reg_val = mctl_read_w(SDR_DRR);
-			reg_val |= 0x1U<<31;
-			mctl_write_w(SDR_DRR, reg_val);
-
-			//03-08
-			reg_val = mctl_read_w(SDR_DCR);
-			reg_val &= ~(0x1fU<<27);
-			reg_val |= 0x12U<<27;
-			mctl_write_w(SDR_DCR, reg_val);
-			while( mctl_read_w(SDR_DCR)& (0x1U<<31) );
-
-			mem_delay(0x100);
-
-			//exit self-refresh state
-			reg_val = mctl_read_w(SDR_DCR);
-			reg_val &= ~(0x1fU<<27);
-			reg_val |= 0x17U<<27;
-			mctl_write_w(SDR_DCR, reg_val);
-
-			//check whether command has been executed
-			while( mctl_read_w(SDR_DCR)& (0x1U<<31) );
-
-			//enable auto-fresh			//by cpl 2013-5-6
-			reg_val = mctl_read_w(SDR_DRR);
-			reg_val &= ~(0x1U<<31);
-			mctl_write_w(SDR_DRR, reg_val);
-
-			mctl_itm_enable();
-			//write back dqs gating value
-			mctl_write_w(SDR_RSLR0, (dram_para->dram_tpr5) & 0xfff);	//dqs_value_save_120[0]
-			mctl_write_w(SDR_RDQSGR,((dram_para->dram_tpr5)>>16) & 0xff);	// dqs_value_save_120[1]);		
-	}
-	else if(freq_p == 1)
-	{
-			mctl_self_refresh_entry();//DRAMC_enter_selfrefresh();
-
-			mctl_disable_dll();
-			DRAMC_clock_output_en(0);	//dram clock off
-
-			setup_dram_pll(dram_para->dram_clk);
-			mctl_itm_disable();
-			mctl_enable_dll0(dram_para->dram_tpr3);
-			mctl_enable_dllx(dram_para->dram_tpr3);
-
-//			//dram clock on
-			DRAMC_clock_output_en(1);
-
-			//set refresh period
-			DRAMC_set_autorefresh_cycle(dram_para->dram_clk);
-
-		  	//disable auto-fresh			//by cpl 2013-5-6
-			reg_val = mctl_read_w(SDR_DRR);
-			reg_val |= 0x1U<<31;
-			mctl_write_w(SDR_DRR, reg_val);
-
-			//03-08
-			reg_val = mctl_read_w(SDR_DCR);
-			reg_val &= ~(0x1fU<<27);
-			reg_val |= 0x12U<<27;
-			mctl_write_w(SDR_DCR, reg_val);
-			while( mctl_read_w(SDR_DCR)& (0x1U<<31) );
-
-			mem_delay(0x100);
-
-			//exit self-refresh state
-			reg_val = mctl_read_w(SDR_DCR);
-			reg_val &= ~(0x1fU<<27);
-			reg_val |= 0x17U<<27;
-			mctl_write_w(SDR_DCR, reg_val);
-
-			//check whether command has been executed
-			while( mctl_read_w(SDR_DCR)& (0x1U<<31) );
-
-			//enable auto-fresh			//by cpl 2013-5-6
-			reg_val = mctl_read_w(SDR_DRR);
-			reg_val &= ~(0x1U<<31);
-			mctl_write_w(SDR_DRR, reg_val);
-
-			mctl_itm_enable();
-			//write back dqs gating value
-      reg_val = mctl_read_w(SDR_GP_REG1);
-      mctl_write_w(SDR_RSLR0, reg_val);
-
-      reg_val = mctl_read_w(SDR_GP_REG2);
-      mctl_write_w(SDR_RDQSGR, reg_val);
-	}
-}
-//*****************************************************************************end of freq jump at 20120628
-
-
 __s32 init_DRAM(int type)
 {
 	__u32 i;
-	__u32 temp_data_value,reg_val;
 	__s32 ret_val;
 	boot_dram_para_t  boot0_para;
     msg("dram driver version: %s\n",dram_driver_version);
@@ -1281,60 +1038,7 @@ __s32 init_DRAM(int type)
 	{
       
 #if SYS_STORAGE_MEDIA_TYPE == SYS_STORAGE_MEDIA_NAND_FLASH
-		//add by yeshaozhen at 20130628, used for frequency jump
-		if(boot0_para.dram_tpr4 & 0x8)	//120M initial
-		{
-				temp_data_value				= boot0_para.dram_clk;
-				boot0_para.dram_clk 	= 120;
-				ret_val 							= DRAMC_init( &boot0_para );
-
-//__asm__ __volatile__ ("cmp r0,r0");
-//__asm__ __volatile__ ("beq .");
-//__asm{cmp r0,r0};
-//__asm{beq .}
-
-//				{
-//					int a=1;
-//					while(a ==1);
-//				}
-//
-//				for(i=0;i<0x8000000;i++)
-//					mctl_write_w(0x40000000+(i<<2),i+1);
-//					
-//				for(i=0;i<0x8000000;i++)
-//					if( (i+1) != mctl_read_w(0x40000000+(i<<2)))
-//						ret_val = 0;
-				
-				if(ret_val==0)	//initial failed
-					return 0;
-					
-				//save dqs gating value
-  			boot0_para.dram_tpr5 = mctl_read_w(SDR_RSLR0) & 0xfff;
-  			boot0_para.dram_tpr5 |=  ((mctl_read_w(SDR_RDQSGR) & 0xff) <<16);
-  			
-  			mctl_ddr3_reset();
-  			//reset the controller logic
-  			//close it first
-		    reg_val = mctl_read_w(DRAM_CCM_AHB_GATE_REG);
-		    reg_val &= ~(0x3<<14);
-		    mctl_write_w(DRAM_CCM_AHB_GATE_REG, reg_val);
-				delay_us(10);
-    		//then open it
-    		reg_val |= 0x3<<14;
-    		mctl_write_w(DRAM_CCM_AHB_GATE_REG, reg_val);
-				delay_us(10);
-  			
-  			boot0_para.dram_clk 	= temp_data_value;	//set the freq to user define
-  			ret_val = 0;
-		}
 		ret_val = DRAMC_init( &boot0_para );
-		
-		reg_val = mctl_read_w(SDR_RSLR0);	//added by yeshaozhen at 20130725
-		mctl_write_w(SDR_GP_REG1, reg_val);//added by yeshaozhen at 20130725
-		reg_val = mctl_read_w(SDR_RDQSGR);//added by yeshaozhen at 20130725
-		mctl_write_w(SDR_GP_REG2, reg_val);//added by yeshaozhen at 20130725
-		set_boot0_dram_para( &boot0_para );//added by yeshaozhen at 20130725
-		
 #elif SYS_STORAGE_MEDIA_TYPE == SYS_STORAGE_MEDIA_SD_CARD
 		if(!type)
 		{
@@ -1351,7 +1055,6 @@ __s32 init_DRAM(int type)
 
 		i++;
 	}
-	
 //    print_boot0_dram_para(&boot0_para);
 	return ret_val;
 }

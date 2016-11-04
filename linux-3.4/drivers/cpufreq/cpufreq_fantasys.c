@@ -29,9 +29,7 @@
 #include <linux/delay.h>
 #include <mach/sys_config.h>
 #include <mach/powernow.h>
-#include <mach/dram-freq.h>
 #include <linux/input.h>
-#include <linux/reboot.h>
 
 
 #define FANTASY_DEBUG_HOTPLUG               (1)
@@ -69,10 +67,18 @@ static unsigned int min_sampling_rate;
 #define MIN_LATENCY_MULTIPLIER              (10)
 #define TRANSITION_LATENCY_LIMIT            (10 * 1000 * 1000)
 
-#define POWERNOW_PERFORM_MAX       (912000)    /* config the maximum frequency of performance mode */
-#define POWERNOW_NORMAL_MAX        (912000)    /* config the maximum frequency of normal mode */
+#define POWERNOW_PERFORM_MAX       (1008000)    /* config the maximum frequency of performance mode */
+#define POWERNOW_NORMAL_MAX        (1008000)    /* config the maximum frequency of normal mode */
 #define POWERNOW_USER_EVENT_FREQ   (720000)    /* config the userevent frequency of normal mode */
 
+#define LOAD_INT(x) ((x) >> FSHIFT)
+#define LOAD_FRAC(x) LOAD_INT(((x) & (FIXED_1-1)) * 100)
+
+/* check cpu needs plugin only (cur freq > DEF_CPU_UP_FREQ) */
+#define DEF_CPU_UP_LOADING        ((1<<FSHIFT) + (60)*(FIXED_1-1)/100)
+#define DEF_CPU_DOWN_LOADING      ((1<<FSHIFT) + (80)*(FIXED_1-1)/100) 
+#define DEF_CPU_UP_ACTIVE_TASK    4
+#define DEF_CPU_DOWN_ACTIVE_TASK  1 
 
 /* Sampling types */
 enum {DBS_NORMAL_SAMPLE, DBS_SUB_SAMPLE};
@@ -107,6 +113,8 @@ struct cpu_dbs_info_s {
     unsigned int rate_mult;
     int cpu;                    /* current cpu number           */
     unsigned int sample_type:1;
+    struct work_struct up_work;     /* cpu plug-in processor    */
+    struct work_struct down_work;   /* cpu plug-out processer   */
     /*
      * percpu mutex that serializes governor limit change with
      * do_dbs_timer invocation. We do not want do_dbs_timer to run
@@ -141,6 +149,7 @@ struct dbs_tuners {
     unsigned int io_is_busy;        /* flag to mark if iowait calculate as cpu busy */
 
     /* pegasusq tuners */
+    atomic_t hotplug_lock;          /* lock cpu online number, disable plug-in/out  */
     unsigned int dvfs_debug;        /* dvfs debug flag, print dbs information       */
     unsigned int powernow;          /* power now mode                               */
     unsigned int pn_perform_freq;   /* performance mode max freq                    */
@@ -155,6 +164,7 @@ static struct dbs_tuners dbs_tuners_ins = {
     .down_differential = DEF_FREQUENCY_DOWN_DIFFERENTIAL,
     .ignore_nice = 0,
     .powersave_bias = 0,
+    .hotplug_lock = ATOMIC_INIT(0),
     .dvfs_debug = 0,
     .powernow = SW_POWERNOW_NORMAL,
     .pn_perform_freq = POWERNOW_PERFORM_MAX,
@@ -191,6 +201,8 @@ struct cpufreq_frequency_table fantasys_freq_tbl[] = {
 /*
  * CPU hotplug lock interface
  */
+static atomic_t g_hotplug_lock = ATOMIC_INIT(0);
+
 static inline u64 get_cpu_idle_time_jiffy(unsigned int cpu, u64 *wall)
 {
     u64 idle_time;
@@ -304,7 +316,82 @@ static void ondemand_powersave_bias_init(void)
     }
 }
 
+/*
+ * apply cpu hotplug lock, up or down cpu
+ */
+static void apply_hotplug_lock(void)
+{
+    int online, possible, lock, flag;
+    struct work_struct *work;
+    struct cpu_dbs_info_s *dbs_info;
 
+    dbs_info = &per_cpu(od_cpu_dbs_info, 0);
+    online = num_online_cpus();
+    possible = num_possible_cpus();
+    lock = atomic_read(&g_hotplug_lock);
+    flag = lock - online;
+
+    if (flag == 0)
+        return;
+
+    work = flag > 0 ? &dbs_info->up_work : &dbs_info->down_work;
+
+    printk(KERN_DEBUG "%s online:%d possible:%d lock:%d flag:%d %d\n",
+         __func__, online, possible, lock, flag, (int)abs(flag));
+
+    queue_work_on(dbs_info->cpu, dvfs_workqueue, work);
+}
+
+/*
+ * lock cpu number, the number of onlie cpu should less then num_core
+ */
+int cpufreq_fantasys_cpu_lock(int num_core)
+{
+    int prev_lock;
+    struct cpu_dbs_info_s *dbs_info;
+
+    dbs_info = &per_cpu(od_cpu_dbs_info, 0);
+    mutex_lock(&dbs_info->timer_mutex);
+
+    if (num_core < 1 || num_core > num_possible_cpus()) {
+        mutex_unlock(&dbs_info->timer_mutex);
+        return -EINVAL;
+    }
+
+    prev_lock = atomic_read(&g_hotplug_lock);
+    if (prev_lock != 0 && prev_lock < num_core) {
+        mutex_unlock(&dbs_info->timer_mutex);
+        return -EINVAL;
+    }
+
+    atomic_set(&g_hotplug_lock, num_core);
+    apply_hotplug_lock();
+    mutex_unlock(&dbs_info->timer_mutex);
+
+    return 0;
+}
+
+/*
+ * unlock cpu hotplug number
+ */
+int cpufreq_fantasys_cpu_unlock(int num_core)
+{
+    int prev_lock = atomic_read(&g_hotplug_lock);
+    struct cpu_dbs_info_s *dbs_info;
+
+    dbs_info = &per_cpu(od_cpu_dbs_info, 0);
+    mutex_lock(&dbs_info->timer_mutex);
+
+    if (prev_lock != num_core) {
+        mutex_unlock(&dbs_info->timer_mutex);
+        return -EINVAL;
+    }
+
+    atomic_set(&g_hotplug_lock, 0);
+    mutex_unlock(&dbs_info->timer_mutex);
+
+    return 0;
+}
 /************************** sysfs interface ************************/
 
 static ssize_t show_sampling_rate_min(struct kobject *kobj,
@@ -499,11 +586,9 @@ static ssize_t store_powersave_bias(struct kobject *a, struct attribute *b,
     ondemand_powersave_bias_init();
     return count;
 }
-extern int cpu_hotplug_set_lock(int num_core);
-extern int cpu_hotplug_get_lock(void);
 static ssize_t show_hotplug_lock(struct kobject *kobj, struct attribute *attr, char *buf)
 {
-    return sprintf(buf, "%d\n", cpu_hotplug_get_lock());
+    return sprintf(buf, "%d\n", atomic_read(&g_hotplug_lock));
 }
 
 static ssize_t store_hotplug_lock(struct kobject *a, struct attribute *b,
@@ -511,11 +596,30 @@ static ssize_t store_hotplug_lock(struct kobject *a, struct attribute *b,
 {
     unsigned int input;
     int ret;
+    int prev_lock;
 
     ret = sscanf(buf, "%u", &input);
     if (ret != 1)
         return -EINVAL;
-    cpu_hotplug_set_lock(input);
+    input = min(input, num_possible_cpus());
+    prev_lock = atomic_read(&dbs_tuners_ins.hotplug_lock);
+
+    if (prev_lock)
+        cpufreq_fantasys_cpu_unlock(prev_lock);
+
+    if (input == 0) {
+        atomic_set(&dbs_tuners_ins.hotplug_lock, 0);
+        return count;
+    }
+
+    ret = cpufreq_fantasys_cpu_lock(input);
+    if (ret) {
+        printk(KERN_ERR "[HOTPLUG] already locked with smaller value %d < %d\n",
+            atomic_read(&g_hotplug_lock), input);
+        return ret;
+    }
+
+    atomic_set(&dbs_tuners_ins.hotplug_lock, input);
 
     return count;
 }
@@ -616,6 +720,115 @@ static struct attribute_group dbs_attr_group = {
 };
 
 
+/*
+ * cpu hotplug, just plug in one cpu
+ */
+static void cpu_up_work(struct work_struct *work)
+{
+    int cpu, nr_up, online, hotplug_lock;
+    struct cpu_dbs_info_s *dbs_info;
+
+    dbs_info = &per_cpu(od_cpu_dbs_info, 0);
+//    mutex_lock(&dbs_info->timer_mutex);
+    online = num_online_cpus();
+    hotplug_lock = atomic_read(&g_hotplug_lock);
+
+    if (hotplug_lock) {
+        nr_up = (hotplug_lock - online) > 0? (hotplug_lock-online) : 0;
+    } else {
+        nr_up = 1;
+    }
+
+    for_each_cpu_not(cpu, cpu_online_mask) {
+        if (cpu == 0)
+            continue;
+
+        if (nr_up-- == 0)
+            break;
+
+        printk(KERN_DEBUG "cpu up:%d\n", cpu);
+        cpu_up(cpu);
+    }
+//    mutex_unlock(&dbs_info->timer_mutex);
+}
+
+/*
+ * cpu hotplug, cpu plugout
+ */
+static void cpu_down_work(struct work_struct *work)
+{
+    int cpu, nr_down, online, hotplug_lock;
+    struct cpu_dbs_info_s *dbs_info;
+
+    dbs_info = &per_cpu(od_cpu_dbs_info, 0);
+//    mutex_lock(&dbs_info->timer_mutex);
+    online = num_online_cpus();
+    hotplug_lock = atomic_read(&g_hotplug_lock);
+
+    if (hotplug_lock) {
+        nr_down = (online - hotplug_lock) > 0? (online-hotplug_lock) : 0;
+    } else {
+        nr_down = 1;
+    }
+
+    for_each_online_cpu(cpu) {
+        if (cpu == 0)
+            continue;
+
+        if (nr_down-- == 0)
+            break;
+
+        cpu_down(cpu);
+    }
+//    mutex_unlock(&dbs_info->timer_mutex);
+}
+
+
+/*
+ * check if need plug in one cpu core
+ */
+static int check_hotplug(struct cpu_dbs_info_s *this_dbs_info)
+{
+    unsigned long load[3];
+    int online;
+    int ncpus;
+    int hotplug_lock = atomic_read(&g_hotplug_lock);
+
+    online = num_online_cpus();
+    ncpus = online;
+
+    /* hotplug has been locked, do nothing */
+    if (hotplug_lock > 0){
+        ncpus = hotplug_lock;
+        goto __do_hotplug;
+    }
+    
+    get_avenrun_sec(load, FIXED_1/200, 0);
+    if (unlikely(dbs_tuners_ins.dvfs_debug & FANTASY_DEBUG_HOTPLUG)) {
+        printk("load0:%lx,(%lu.%02lu); load1:%lx,(%lu.%02lu), active task:%lu\n", 
+                load[0], LOAD_INT(load[0]), LOAD_FRAC(load[0]),
+                load[1], LOAD_INT(load[1]), LOAD_FRAC(load[1]),
+                load[2]);
+    }
+
+    if (load[2] >= DEF_CPU_UP_ACTIVE_TASK && online < num_possible_cpus())
+    {
+        ncpus = online + 1;
+    }
+    else if (load[2] <= DEF_CPU_DOWN_ACTIVE_TASK 
+        && load[0] < DEF_CPU_DOWN_LOADING && online > 1){
+        ncpus = online - 1;
+    }
+    
+__do_hotplug:
+    if (ncpus > online){
+        queue_work_on(this_dbs_info->cpu, dvfs_workqueue, &this_dbs_info->up_work);
+    }else if (ncpus < online) {
+        queue_work_on(this_dbs_info->cpu, dvfs_workqueue, &this_dbs_info->down_work);
+    }
+    
+    return 0;
+}
 
 static void dbs_freq_increase(struct cpufreq_policy *p, unsigned int freq)
 {
@@ -797,6 +1010,8 @@ static void do_dbs_timer(struct work_struct *work)
         if (!dbs_tuners_ins.freq_lock){
             check_freq(dbs_info);
         }
+        /* Check for CPU hotplug */
+        check_hotplug(dbs_info);
 
         if (dbs_info->freq_lo) {
             /* Setup timer for SUB_SAMPLE */
@@ -842,6 +1057,8 @@ static inline void dbs_timer_init(struct cpu_dbs_info_s *dbs_info)
 static inline void dbs_timer_exit(struct cpu_dbs_info_s *dbs_info)
 {
     cancel_delayed_work_sync(&dbs_info->work);
+    //cancel_work_sync(&dbs_info->up_work);
+    //cancel_work_sync(&dbs_info->down_work);
 }
 
 
@@ -999,6 +1216,9 @@ static int start_powernow(unsigned long mode)
             __cpufreq_driver_target(policy, policy->max, CPUFREQ_RELATION_H);
             mutex_unlock(&this_dbs_info->timer_mutex);
         }
+        if (num_online_cpus() == 1){
+            queue_work_on(this_dbs_info->cpu, dvfs_workqueue, &this_dbs_info->up_work);
+        }
         this_dbs_info->rate_mult = dbs_tuners_ins.sampling_down_factor;
         return 0;
     }
@@ -1009,25 +1229,44 @@ static int start_powernow(unsigned long mode)
     mutex_lock(&this_dbs_info->timer_mutex);
     switch (mode) {
     case SW_POWERNOW_EXTREMITY:
+#if 0
+        // plugin offline cpu
+        if (num_online_cpus() == 1){
+            queue_work_on(this_dbs_info->cpu, dvfs_workqueue, &this_dbs_info->up_work);
+        }
+
+        //set max freq
+        dbs_tuners_ins.freq_lock = 0;
+        policy->max = policy->cpuinfo.max_freq;
+        __cpufreq_driver_target(policy, policy->max, CPUFREQ_RELATION_H);
+        dbs_tuners_ins.powernow = mode;
+#else
+        atomic_set(&g_hotplug_lock, num_possible_cpus());
+        apply_hotplug_lock();
+
         policy->max = policy->cpuinfo.max_freq;
         dbs_tuners_ins.freq_lock = policy->max;
         if (unlikely(dbs_tuners_ins.dvfs_debug & FANTASY_DEBUG_CPUFREQ)) {
             printk("%s, %d : try to switch cpu freq to %d \n", __func__, __LINE__, policy->max);
         }
         __cpufreq_driver_target(policy, policy->max, CPUFREQ_RELATION_H);
+#endif
         break;
                 
     case SW_POWERNOW_PERFORMANCE:
+        atomic_set(&g_hotplug_lock, 0);
         dbs_tuners_ins.freq_lock = 0;
         policy->max = dbs_tuners_ins.pn_perform_freq;
         break;
         
     case SW_POWERNOW_NORMAL:
+        atomic_set(&g_hotplug_lock, 0);
         dbs_tuners_ins.freq_lock = 0;
         policy->max = dbs_tuners_ins.pn_normal_freq;
         break;
         
     case SW_POWERNOW_USB:
+        atomic_set(&g_hotplug_lock, 0);
         policy->max = dbs_tuners_ins.pn_perform_freq;
         dbs_tuners_ins.freq_lock = policy->max;
         if (unlikely(dbs_tuners_ins.dvfs_debug & FANTASY_DEBUG_CPUFREQ)) {
@@ -1038,6 +1277,7 @@ static int start_powernow(unsigned long mode)
         
     default:
         printk(KERN_ERR "start_powernow uncare mode:%d!\n", (int)mode);
+        atomic_set(&g_hotplug_lock, 0);
         dbs_tuners_ins.freq_lock = 0;
         mode = dbs_tuners_ins.powernow;
         retval = -EINVAL;
@@ -1089,6 +1329,9 @@ static int fantasys_pm_notify(struct notifier_block *nb, unsigned long event, vo
         cancel_delayed_work_sync(&dbs_info->work);
         /*disable freq lock to avoid adjust cpufreq before PM_POST_SUSPEND in CPUFREQ_GOV_LIMITS cmd*/
         dbs_tuners_ins.freq_lock = 0;
+        cancel_work_sync(&dbs_info->up_work);
+        cancel_work_sync(&dbs_info->down_work);
+        cpu_down_work(&dbs_info->down_work);
         if (policy->cur != 720000){
             __cpufreq_driver_target(dbs_info->cur_policy, 720000, CPUFREQ_RELATION_H);
         }
@@ -1104,47 +1347,6 @@ static struct notifier_block fantasys_pm_notifier = {
     .priority = 0xFF,
 };
 
-static int fantasys_reboot_notify(struct notifier_block *this, unsigned long code, void *_cmd)
-{
-    fantasys_pm_notify(0, PM_SUSPEND_PREPARE, 0);
-    return NOTIFY_DONE;
-}
-
-static struct notifier_block fantasys_reboot_notifier = {
-	.notifier_call = fantasys_reboot_notify,
-};
-
-static int fantasys_dram_notify(struct notifier_block *nb, unsigned long event, void *dummy)
-{
-    struct cpu_dbs_info_s *dbs_info;
-    struct cpufreq_policy *policy;
-
-    dbs_info = &per_cpu(od_cpu_dbs_info, 0);
-    policy = dbs_info->cur_policy;
-    
-    if (policy == NULL){
-        return -EINVAL;
-    }
-    if (policy->governor != &cpufreq_gov_fantasys){
-        return -EINVAL;
-    }
-
-    if (event == DRAMFREQ_NOTIFY_PREPARE) {
-        cancel_delayed_work_sync(&dbs_info->work);
-        if (policy->cur != 912000){
-            __cpufreq_driver_target(dbs_info->cur_policy, 912000, CPUFREQ_RELATION_H);
-        }
-    } else if (event == DRAMFREQ_NOTIFY_DONE) {
-        start_powernow(dbs_tuners_ins.powernow);
-    }
-
-    return NOTIFY_OK;
-}
-
-static struct notifier_block fantasys_dram_notifier = {
-    .notifier_call = fantasys_dram_notify,
-    .priority = 0xFF,
-};
 
 /*
  * init cpu max frequency from sysconfig;
@@ -1340,6 +1542,8 @@ static int __init cpufreq_gov_dbs_init(void)
     for_each_possible_cpu(i) {
         struct cpu_dbs_info_s *j_dbs_info;
         j_dbs_info = &per_cpu(od_cpu_dbs_info, i);
+        INIT_WORK(&j_dbs_info->up_work, cpu_up_work);
+        INIT_WORK(&j_dbs_info->down_work, cpu_down_work);
         mutex_init(&j_dbs_info->timer_mutex);
         INIT_WORK(&per_cpu(dbs_refresh_work, i), dbs_refresh_callback);
     }
@@ -1357,8 +1561,6 @@ static int __init cpufreq_gov_dbs_init(void)
     __init_syscfg();
     ret = register_sw_powernow_notifier(&fantasys_powernow_notifier);
     register_pm_notifier(&fantasys_pm_notifier);
-	register_reboot_notifier(&fantasys_reboot_notifier);
-    dramfreq_register_notifier(&fantasys_dram_notifier);
     return ret;
 
 err_governor:
@@ -1381,6 +1583,8 @@ static void __exit cpufreq_gov_dbs_exit(void)
     for_each_possible_cpu(i) {
         struct cpu_dbs_info_s *j_dbs_info;
         j_dbs_info = &per_cpu(od_cpu_dbs_info, i);
+        cancel_work_sync(&j_dbs_info->up_work);
+        cancel_work_sync(&j_dbs_info->down_work);
         cancel_work_sync(&per_cpu(dbs_refresh_work, i));
         cancel_delayed_work_sync(&j_dbs_info->work);
         mutex_destroy(&j_dbs_info->timer_mutex);

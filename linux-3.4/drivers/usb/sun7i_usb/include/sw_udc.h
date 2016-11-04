@@ -70,103 +70,19 @@ typedef struct sw_udc_ep {
 #endif
 
 static const char ep0name [] = "ep0";
-static const char ep1in_bulk_name []  = "ep1in-bulk";
-static const char ep1out_bulk_name [] = "ep1out-bulk";
-static const char ep2in_bulk_name []  = "ep2in-bulk";
-static const char ep2out_bulk_name [] = "ep2out-bulk";
-static const char ep3_iso_name []     = "ep3-iso";
-static const char ep4_int_name []     = "ep4-int";
-static const char ep5in_bulk_name []  = "ep5in-bulk";
-static const char ep5out_bulk_name [] = "ep5out-bulk";
 
-struct sw_udc_fifo{
-    const char *name;
+static const char *const ep_name[] = {
+	ep0name,	/* everyone has ep0 */
 
-	u32 fifo_addr;
-	u32 fifo_size;
-	u8  double_fifo;
+	/* sw_udc four bidirectional bulk endpoints */
+	"ep1-bulk",
+	"ep2-bulk",
+	"ep3-bulk",
+	"ep4-bulk",
+	"ep5-int"
 };
 
-#if 0
-
-// fifo 4k
-/*
- *    ep	   		fifo_addr  	fifo_size
- * "ep0",	       	 	0,      	0.5k
- * "ep1in-bulk",		0.5k,  		0.5k
- * "ep1out-bulk",		1k,  		0.5k
- * "ep2in-bulk",		1.5k,  		0.5k
- * "ep2out-bulk",		2k, 		0.5k
- * "ep3-iso",			2.5k, 		1k
- * "ep4-int",			3.5k, 		0.5k
- */
-static const struct sw_udc_fifo ep_fifo[] = {
-	{ep0name,          0,    512,  0},
-	{ep1in_bulk_name,  512,  512,  0},
-	{ep1out_bulk_name, 1024, 512,  0},
-	{ep2in_bulk_name,  1536, 512,  0},
-	{ep2out_bulk_name, 2048, 512,  0},
-	{ep3_iso_name,     2560, 1024, 0},
-	{ep4_int_name,     3584, 512,  0},
-};
-
-#else
-
-//fifo 8k
-
-/*
- *    ep	   		fifo_addr  	 fifo_size
- * "ep0",	       	 	0,      	0.5k
- * "ep1in-bulk",		0.5k,  		1k
- * "ep1out-bulk",		1.5k,  		1k
- * "ep2in-bulk",		2.5k,  		1k
- * "ep2out-bulk",		3.5k, 		1k
- * "ep3-iso",			4.5k, 		2k
- * "ep4-int",			6.5k, 		0.5k
- * "ep5in-bulk",		7k,			0.5k
- * "ep5out-bulk",		7.5k,		0.5k
- */
-#if 0
-static const struct sw_udc_fifo ep_fifo[] = {
-	{ep0name,          0,    512,  0},
-	{ep1in_bulk_name,  512,  1024, 1},
-	{ep1out_bulk_name, 1536, 1024, 1},
-	{ep2in_bulk_name,  2560, 1024, 1},
-	{ep2out_bulk_name, 3584, 1024, 1},
-	{ep3_iso_name,     4608, 2048, 1},
-	{ep4_int_name,     6656, 512,  0},
-	{ep5in_bulk_name,  7168, 512,  0},
-	{ep5out_bulk_name, 7680, 512,  0},
-};
-#else
-static const struct sw_udc_fifo ep_fifo[] = {
-	{ep0name,          0,    512,  0},
-	{ep1in_bulk_name,  512,  1024, 0},
-	{ep1out_bulk_name, 1536, 1024, 0},
-	{ep2in_bulk_name,  2560, 1024, 0},
-	{ep2out_bulk_name, 3584, 1024, 0},
-	{ep3_iso_name,     4608, 2048, 0},
-	{ep4_int_name,     6656, 512,  0},
-	{ep5in_bulk_name,  7168, 512,  0},
-	{ep5out_bulk_name, 7680, 512,  0},
-};
-#endif
-/*
- * ep_fifo_in[i] = {n} i : 表示物理ep编号, n : 表示物理ep对应在ep_fifo中的位置
- *
- * 例如 : ep_fifo_in[2] = {3}  表示 ep2_in 在数组 ep_fifo[3] 中
- *
- * ep3_iso_name 和 ep4_int_name不可能同时为 tx or rx
- *
- */
-static const int ep_fifo_in[] = {0, 1, 3, 5, 6, 7};
-static const int ep_fifo_out[] = {0, 2, 4, 5, 6, 8};
-
-#endif
-
-#define SW_UDC_ENDPOINTS       ARRAY_SIZE(ep_fifo)
-
-#define  is_tx_ep(ep)		((ep->bEndpointAddress) & USB_DIR_IN)
+#define SW_UDC_ENDPOINTS       ARRAY_SIZE(ep_name)
 
 enum sw_buffer_map_state {
 	UN_MAPPED = 0,

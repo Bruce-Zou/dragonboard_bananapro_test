@@ -43,11 +43,11 @@ program     = "memtester.sh"
 category    = 0
 run_type    = 1
 dram_size   = 1024
-test_size   = 1
+test_size   = 2
 
 [rtc]
 display_name= "时钟"
-activated   = 0
+activated   = 1
 program     = "rtctester.sh"
 category    = 0
 run_type    = 1
@@ -60,7 +60,7 @@ run_type    = 1
 ;-------------------------------------------------------------------------------
 [wifi]
 display_name= "WIFI"
-activated   = 1
+activated   = 0
 program     = "wifitester.sh"
 category    = 0
 run_type    = 1
@@ -157,14 +157,14 @@ run_type    = 1
 
 [Usb_OTG]
 display_name= "USB_OTG"
-activated   = 0
+activated   = 1
 program     = "otgtester.sh"
 category    = 1
 run_type    = 1
 
 [SATA]
 display_name= "SATA"
-activated   = 0
+activated   = 1
 program     = "satatest.sh"
 category    = 1
 run_type    = 1
@@ -186,7 +186,7 @@ samplerate  = 48000
 
 [tv]
 display_name= "CVBS"
-activated   = 0
+activated   = 1
 program     = "tvtester"
 category    = 1
 run_type    = 1
@@ -214,15 +214,15 @@ run_type    = 1
 ;module_path =
 
 [power]
-display_name= "Power按键"
-activated   = 0 
-program     = "powerkeytester"
+display_name = "Power按键"
+activated   = 1 
+program     = "powertester.sh"
 category    = 1 
 run_type    = 1 
 
 [uboot]
-display_name= "Uboot按键"
-activated   = 0
+display_name = "Uboot按键"
+activated   = 1
 program     = "uboottester.sh"
 category    = 1
 run_type    = 1
@@ -232,13 +232,13 @@ run_type    = 1
 ;   the config of the led gpio
 ;-------------------------------------------------------------------------------
 [gpio_led]
-display_name= "LED"
+display_name = "LED"
 activated   = 1
 program     = "ledtester.sh"
 category    = 0
 run_type    = 1
 led_pin0 = "port:PH24<1><default><default><1>"
-led_pin1 = "port:PG2<1><default><default><1>"
+led_pin1 = "port:PH3<1><default><default><1>"
 module_path = "/system/vendor/modules/gpio-sunxi.ko"
 ;-------------------------------------------------------------------------------
 
@@ -247,8 +247,8 @@ module_path = "/system/vendor/modules/gpio-sunxi.ko"
 ;   the config of the led gpio
 ;-------------------------------------------------------------------------------
 [gpio_pins]
-display_name= "排针"
-activated   = 0
+display_name = "排针"
+activated   = 1
 program     = "gpiotester.sh"
 category    = 0
 run_type    = 1 
@@ -280,11 +280,6 @@ gpio_pin25 = "port:PI20<1><default><default><default>"
 gpio_pin26 = "port:PB6<1><default><default><default>"
 gpio_pin27 = "port:PB12<1><default><default><default>"
 gpio_pin28 = "port:PB8<1><default><default><default>"
-gpio_pin29 = "port:PH3<1><default><default><default>"
-gpio_pin30 = "port:PH5<1><default><default><default>"
-gpio_pin31 = "port:PB22<1><default><default><default>"
-gpio_pin32 = "port:PB23<1><default><default><default>"
-gpio_pin33 = "port:PH4<1><default><default><default>"
 
 ;-------------------------------------------------------------------------------
 
@@ -293,8 +288,8 @@ gpio_pin33 = "port:PH4<1><default><default><default>"
 ;   the config of the led gpio
 ;-------------------------------------------------------------------------------
 [dsi]
-display_name= "lcd接口"
-activated   = 0
+display_name = "lcd接口"
+activated   = 1
 program     = "dsitester.sh"
 category    = 0
 run_type    = 1
@@ -341,12 +336,11 @@ gpio_pin34                  = port:PH12<1><default><default><default>
 ;   the config of the led gpio
 ;-------------------------------------------------------------------------------
 [csi]
-display_name= "camera接口"
-activated   = 0
+display_name = "camera接口"
+activated   = 1
 program     = "csitester.sh"
 category    = 0
 run_type    = 1
-module_path = "/system/vendor/modules/gpio-sunxi.ko"
 gpio_pin1         = port:PE0<1><default><default><default>
 gpio_pin2         = port:PE1<1><default><default><default>
 gpio_pin3         = port:PE2<1><default><default><default>
@@ -375,8 +369,8 @@ gpio_pin19                  = port:PH18<1><default><default><default>
 ;   The full path of ir module file.
 ;-------------------------------------------------------------------------------
 [ir]
-display_name= "红外"
-activated   = 0
+display_name = "红外"
+activated   = 1
 program     = "irtester"
 category    = 1
 run_type    = 1
@@ -390,7 +384,7 @@ module_path = "/system/vendor/modules/sun7i-ir.ko"
 ; music_playtime:
 ; music playback time in secend before recording
 ; sound_file:
-; the sound_f1le you want to play
+; the sound_file you want to play
 ; samplerate:
 ; the sound file samplerate
 ; micx_gain:
@@ -402,7 +396,7 @@ module_path = "/system/vendor/modules/sun7i-ir.ko"
 ; the mic data threshold.the test will be pass when the capture data above this value
 ;------------------------------------------------------------------------------------
 [mic]
-display_name= "录音"
+display_name = "录音耳机"
 activated   = 1
 program     = "mictester"
 category    = 1

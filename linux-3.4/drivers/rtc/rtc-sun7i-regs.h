@@ -117,9 +117,8 @@ typedef struct {
 	volatile alarm_enable	         a_enable;          /* XXX */
 	volatile alarm_irq_enable	 a_irq_enable;      /* XXX */
 	volatile alarm_irq_status	 a_irq_status;      /* XXX */
-	volatile timer_general_purpose	 timer_gen_purpose[16]; /* XXX */
-    volatile u32 reserve[4];
-    volatile alarm_config	         a_config;          /* XXX */
+	volatile timer_general_purpose	 timer_gen_purpose; /* XXX */
+	volatile alarm_config	         a_config;          /* XXX */
 }rtc_alarm_reg;
 
 #endif  /* __RTC_SUNXI_REGS__ */

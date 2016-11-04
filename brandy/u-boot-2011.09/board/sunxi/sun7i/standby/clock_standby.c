@@ -55,7 +55,7 @@ __s32 standby_clock_store(void)
     pll6_value = readl(CCM_PLL6_MOD_CTRL);
     pll7_value = readl(CCM_PLL7_VIDEO1_CTRL);
     pll8_value = readl(CCM_PLL8_GPU_CTRL);
-    clock_div  = readl(CCM_AHB_APB0_CTRL) & 0x3ff;
+    clock_div  = readl(CCM_AHB1_APB1_CTRL) & 0x3ff;
     
     return 0;
 }
@@ -79,7 +79,7 @@ __s32 standby_clock_to_source(int clock_source)
 {
     __u32 reg_val;
 
-    reg_val = readl(CCM_AHB_APB0_CTRL);
+    reg_val = readl(CCM_AHB1_APB1_CTRL);
     reg_val &= ~(0x03 << 16);
     if(clock_source == 32000)
     {
@@ -93,7 +93,7 @@ __s32 standby_clock_to_source(int clock_source)
     {
         reg_val |= 2 << 16;
     }
-    writel(reg_val, CCM_AHB_APB0_CTRL);
+    writel(reg_val, CCM_AHB1_APB1_CTRL);
 
     return 0;
 }
@@ -114,19 +114,19 @@ void standby_clock_divsetto0(void)
 {
     __u32 reg_val;
 
-    reg_val = readl(CCM_AHB_APB0_CTRL);
+    reg_val = readl(CCM_AHB1_APB1_CTRL);
     reg_val &= ~0x3ff;
-    writel(reg_val, CCM_AHB_APB0_CTRL);
+    writel(reg_val, CCM_AHB1_APB1_CTRL);
 }
 
 void standby_clock_divsetback(void)
 {
     __u32 reg_val;
 
-    reg_val = readl(CCM_AHB_APB0_CTRL);
+    reg_val = readl(CCM_AHB1_APB1_CTRL);
     reg_val &= ~0x3ff;
     reg_val |= clock_div;
-    writel(reg_val, CCM_AHB_APB0_CTRL);
+    writel(reg_val, CCM_AHB1_APB1_CTRL);
 }
 
 void standby_clock_drampll_ouput(int op)
@@ -198,13 +198,13 @@ void standby_clock_apb1_to_source(int clock)
 {
     __u32 reg_val;
 
-    reg_val = readl(CCM_APB1_CLK_CTRL);
+    reg_val = readl(CCM_APB2_CLK_CTRL);
     reg_val &= ~(0x03 << 24);
     if(clock == 32000)
     {
         reg_val |= (2 << 24);
     }
-    writel(reg_val, CCM_APB1_CLK_CTRL);
+    writel(reg_val, CCM_APB2_CLK_CTRL);
 }
 
 
@@ -234,7 +234,7 @@ void standby_clock_24m_op(int op)
     }
     else
     {
-        volatile int i;
+        int i;
 
         reg_val1 = readl(CCM_OSC24M_CTRL);
         reg_val1 &= ~(0xffU << 24);

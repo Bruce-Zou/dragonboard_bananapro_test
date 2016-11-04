@@ -69,8 +69,8 @@
 //	0x0400h ~ 0x047Fh	Protocol Configuration
 //
 //-----------------------------------------------------
-//#define REG_EARLY_MODE_CONTROL		0x4D0
-#define REG_MACID_NO_LINK 0x4D0
+#define REG_EARLY_MODE_CONTROL		0x4D0
+
 
 //-----------------------------------------------------
 //

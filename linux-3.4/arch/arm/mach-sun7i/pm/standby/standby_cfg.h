@@ -26,8 +26,11 @@
 #define STANDBY_LDO2_VOL            (3000)  //LDO2 voltage value
 #define STANDBY_LDO3_VOL            (2800)  //LDO3 voltage value
 #define STANDBY_LDO4_VOL            (3300)  //LDO4 voltage value
-#define STANDBY_DCDC2_VOL           (1000)   //DCDC2 voltage value
+#define STANDBY_DCDC2_VOL           (700)   //DCDC2 voltage value
+#define DVFS_DCDC2_VOL              (1050)   //DCDC2 voltage value
 #define STANDBY_DCDC3_VOL           (1000)  //DCDC3 voltage value
+#define STANDBY_DCDC4_VOL           (1000)  //DCDC4 voltage value
+
 
 
 #endif  /* __STANDBY_CFG_H__ */

@@ -178,14 +178,6 @@ typedef struct {
 #define SRC_NON_SECU_DST_SECU		2
 #define SRC_NON_SECU_DST_NON_SECU	3
 
-
-//Jet Cui
-#define sunxi_slave_id(d, s) (((d)<<16) | (s))
-#define DRQDST_SDRAM         1
-#define DRQSRC_SDRAM        1
-
-//Jet Cui
-
 /* dma config para */
 typedef struct {
 	/*

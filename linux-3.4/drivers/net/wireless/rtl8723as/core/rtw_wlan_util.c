@@ -681,25 +681,20 @@ static u32 _ReadCAM(_adapter *padapter ,u32 addr)
 
 	return rtw_read32(padapter,REG_CAMREAD);	
 }
-#endif
 void read_cam(_adapter *padapter ,u8 entry)
 {
-	u32	j,count = 0, addr;
-	u32	cam_val[2];  //cam_val[0] is read_val, cam_val[1] is the address
+	u32	j,count = 0, addr, cmd;
 	addr = entry << 3;
 
 	DBG_8192C("********* DUMP CAM Entry_#%02d***************\n",entry);
 	for (j = 0; j < 6; j++)
 	{	
-		//cmd = _ReadCAM(padapter ,addr+j);
-		//HW_VAR_CAM_READ
-		cam_val[1]=addr+j;
-		rtw_hal_get_hwreg(padapter, HW_VAR_CAM_READ, (u8 *)cam_val);
-		DBG_8192C("offset:0x%02x => 0x%08x \n",addr+j,cam_val[0]);
+		cmd = _ReadCAM(padapter ,addr+j);
+		DBG_8192C("offset:0x%02x => 0x%08x \n",addr+j,cmd);
 	}
 	DBG_8192C("*********************************\n");
 }
-
+#endif
 
 void write_cam(_adapter *padapter, u8 entry, u16 ctrl, u8 *mac, u8 *key)
 {
@@ -2607,7 +2602,7 @@ void rtw_get_current_ip_address(PADAPTER padapter, u8 *pcurrentip)
 				ipaddress[1] = (my_ifa_list->ifa_address >> 8) & 0xFF;
 				ipaddress[2] = (my_ifa_list->ifa_address >> 16) & 0xFF;
 				ipaddress[3] = my_ifa_list->ifa_address >> 24;
-				DBG_871X("%s: %d.%d.%d.%d ==========\n", __func__, 
+				DBG_871X("%s: %x %x %x %x==========\n", __func__, 
 						ipaddress[0], ipaddress[1], ipaddress[2], ipaddress[3]);
 				_rtw_memcpy(pcurrentip, ipaddress, 4);
 			}
@@ -2617,7 +2612,6 @@ void rtw_get_current_ip_address(PADAPTER padapter, u8 *pcurrentip)
 void rtw_get_sec_iv(PADAPTER padapter, u8*pcur_dot11txpn, u8 *StaAddr)
 {
 	struct sta_info		*psta;
-	struct security_priv *psecpriv = &padapter->securitypriv;
 
 	_rtw_memset(pcur_dot11txpn, 0, 8);
 	if(NULL == StaAddr)
@@ -2628,35 +2622,9 @@ void rtw_get_sec_iv(PADAPTER padapter, u8*pcur_dot11txpn, u8 *StaAddr)
 
 	if(psta)
 	{
-		if (psecpriv->dot11PrivacyAlgrthm != _NO_PRIVACY_ && psta->dot11txpn.val > 0)
-			psta->dot11txpn.val--;
-
 		_rtw_memcpy(pcur_dot11txpn, (u8*)&psta->dot11txpn, 8);
-
-		DBG_871X("%s(): CurrentIV: 0x%016llx\n", __func__, psta->dot11txpn.val);
 	}
-}
-void rtw_set_sec_iv(PADAPTER padapter)
-{
-	struct sta_info         *psta;
-	struct mlme_ext_priv    *pmlmeext = &(padapter->mlmeextpriv);
-	struct mlme_ext_info    *pmlmeinfo = &(pmlmeext->mlmext_info);
-	struct pwrctrl_priv *pwrpriv = adapter_to_pwrctl(padapter);
-	struct security_priv *psecpriv = &padapter->securitypriv;
 
-	psta = rtw_get_stainfo(&padapter->stapriv, get_my_bssid(&pmlmeinfo->network));
-
-	if(psta)
-	{
-		if (pwrpriv->wowlan_fw_iv > psta->dot11txpn.val)
-		{
-			if (psecpriv->dot11PrivacyAlgrthm != _NO_PRIVACY_)
-				psta->dot11txpn.val = pwrpriv->wowlan_fw_iv + 2;
-			} else {
-				DBG_871X("%s(): FW IV is smaller than driver\n", __func__);
-				psta->dot11txpn.val += 2;
-			}
-			DBG_871X("%s: dot11txpn: 0x%016llx\n", __func__ ,psta->dot11txpn.val);
-		}
+	DBG_871X("%s(): CurrentIV: %d\n", __func__, pcur_dot11txpn[0]);
 }
 #endif //CONFIG_WOWLAN

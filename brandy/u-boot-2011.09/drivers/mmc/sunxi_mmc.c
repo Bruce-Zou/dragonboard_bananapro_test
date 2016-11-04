@@ -112,7 +112,7 @@ struct sunxi_mmc_des {
 	u32	data_buf1_sz	:13,
 		data_buf2_sz	:13,
     				:6;
-#elif defined CONFIG_ARCH_SUN7I
+#elif defined CONFIG_SUN7I
 #define SDXC_DES_NUM_SHIFT 15
 #define SDXC_DES_BUFFER_MAX_LEN	(1 << SDXC_DES_NUM_SHIFT)
 	u32	data_buf1_sz	:16,
@@ -130,9 +130,7 @@ struct sunxi_mmc_des {
 struct sunxi_mmc_host {
 	unsigned mmc_no;
 	unsigned hclkbase;
-#ifndef CONFIG_ARCH_SUN7I
 	unsigned hclkrst;
-#endif
 	unsigned mclkbase;
 	unsigned database;
 #if defined(CONFIG_ARCH_SUN9IW1P1)
@@ -177,8 +175,6 @@ static int mmc_resource_init(int sdc_no)
 	mmchost->hclkbase = CCM_AHB0_GATE0_CTRL;
 	mmchost->hclkrst  = CCM_AHB0_RST_REG0;
 	mmchost->commreg  = SUNXI_MMC_COMMON_BASE + sdc_no*4;
-#elif defined CONFIG_ARCH_SUN7I
-	mmchost->hclkbase = CCM_AHB_GATE0_CTRL;
 #else
 	mmchost->hclkbase = CCM_AHB1_GATE0_CTRL;
 	mmchost->hclkrst  = CCM_AHB1_RST_REG0;
@@ -202,7 +198,7 @@ static int mmc_clk_io_on(int sdc_no)
 	{
 		gpio_request_simple("card2_boot_para", NULL);
 	}
-#if defined(CONFIG_ARCH_SUN8IW1P1) || defined(CONFIG_ARCH_SUN8IW3P1) || defined(CONFIG_ARCH_SUN8IW5P1)
+#if defined(CONFIG_ARCH_SUN8IW1P1) || defined(CONFIG_ARCH_SUN8IW3P1)
 	/* config ahb clock */
 	rval = readl(mmchost->hclkbase);
 	rval |= (1 << (8 + sdc_no));
@@ -279,11 +275,11 @@ static int mmc_config_clock(struct mmc *mmc, unsigned clk)
 	} else {
 		u32 pllclk;
 		u32 n,m;
-#if (defined(CONFIG_ARCH_SUN7I)|| defined(CONFIG_ARCH_SUN8IW1P1) || defined(CONFIG_ARCH_SUN8IW3P1) || defined(CONFIG_ARCH_SUN8IW5P1) )
+#if (defined(CONFIG_ARCH_SUN7I)|| defined(CONFIG_ARCH_SUN8IW1P1) || defined(CONFIG_ARCH_SUN8IW3P1))
 		pllclk = sunxi_clock_get_pll6() * 1000000;
 #elif defined(CONFIG_ARCH_SUN9IW1P1)
 		pllclk = sunxi_clock_get_pll4_periph1() * 1000000;
-#elif defined(CONFIG_ARCH_SUN5I)
+#elif defined(CONFIG_ARCH_SUN5I)		
 		pllclk = sunxi_clock_get_pll5() * 1000000;
 
 #else
@@ -302,11 +298,11 @@ static int mmc_config_clock(struct mmc *mmc, unsigned clk)
 		}
 		mmchost->mod_clk = clk;
 #if defined(CONFIG_ARCH_SUN5I)
-		if (clk <= 26000000)
-			writel(0x82500000 | (n << 16) | m, mmchost->mclkbase);
+		if (clk <= 26000000)			
+			writel(0x82500000 | (n << 16) | m, mmchost->mclkbase);		
 		else
 			writel(0x82500300 | (n << 16) | m, mmchost->mclkbase);
-#else
+#else 
 		if (clk <= 26000000)
 			writel(0x81500000 | (n << 16) | m, mmchost->mclkbase);
 		else

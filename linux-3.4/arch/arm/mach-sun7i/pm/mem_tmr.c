@@ -97,7 +97,7 @@ void pm_feed_watchdog(void)
 	__mem_tmr_reg_t  *TmrReg;
 	/* set timer register base */
 	TmrReg = (__mem_tmr_reg_t *)IO_ADDRESS(SW_PA_TIMERC_IO_BASE);
-    TmrReg->DogCtl = ((0xA57)<<1)|1;  /*restart watchdog*/
+    TmrReg->DogCtl = 1;  /*restart watchdog*/
 }
 
 /*

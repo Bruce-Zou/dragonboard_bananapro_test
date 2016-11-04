@@ -74,6 +74,85 @@ static DEVICE_ATTR(sel, S_IRUGO|S_IWUSR|S_IWGRP,disp_sel_show, disp_sel_store);
 
 static DEVICE_ATTR(hid, S_IRUGO|S_IWUSR|S_IWGRP,disp_hid_show, disp_hid_store);
 
+static ssize_t disp_sys_status_show(struct device *dev,
+    struct device_attribute *attr, char *buf)
+{
+  ssize_t count = 0;
+	int num_screens, screen_id;
+	int num_layers, layer_id;
+	int hpd;
+
+	num_screens = 2;
+	for(screen_id=0; screen_id < num_screens; screen_id ++) {
+		count += sprintf(buf + count, "screen %d:\n", screen_id);
+		/* output */
+		if(BSP_disp_get_output_type(screen_id) == DISP_OUTPUT_TYPE_LCD) {
+			count += sprintf(buf + count, "\tlcd output\tbacklight(%3d)", BSP_disp_lcd_get_bright(screen_id));
+			count += sprintf(buf + count, "\t%4dx%4d\n", BSP_disp_get_screen_width(screen_id), 			BSP_disp_get_screen_height(screen_id));
+		} else if(BSP_disp_get_output_type(screen_id) == DISP_OUTPUT_TYPE_HDMI) {
+			count += sprintf(buf + count, "\thdmi output");
+			if(BSP_disp_hdmi_get_mode(screen_id) == DISP_TV_MOD_720P_50HZ) {
+				count += sprintf(buf + count, "\t%16s", "720p50hz");
+			} else if(BSP_disp_hdmi_get_mode(screen_id) == DISP_TV_MOD_720P_60HZ) {
+				count += sprintf(buf + count, "\t%16s", "720p60hz");
+			} else if(BSP_disp_hdmi_get_mode(screen_id) == DISP_TV_MOD_1080P_60HZ) {
+				count += sprintf(buf + count, "\t%16s", "1080p60hz");
+			} else if(BSP_disp_hdmi_get_mode(screen_id) == DISP_TV_MOD_1080P_50HZ) {
+				count += sprintf(buf + count, "\t%16s", "1080p50hz");
+			} else if(BSP_disp_hdmi_get_mode(screen_id) == DISP_TV_MOD_1080I_50HZ) {
+				count += sprintf(buf + count, "\t%16s", "1080i50hz");
+			} else if(BSP_disp_hdmi_get_mode(screen_id) == DISP_TV_MOD_1080I_60HZ) {
+				count += sprintf(buf + count, "\t%16s", "1080i60hz");
+			}
+			count += sprintf(buf + count, "\t%4dx%4d\n", BSP_disp_get_screen_width(screen_id), BSP_disp_get_screen_height(screen_id));
+		}
+
+		hpd = BSP_disp_hdmi_get_hpd_status(screen_id); 
+		count += sprintf(buf + count, "\t%11s\n", hpd? "hdmi plugin":"hdmi unplug");
+		count += sprintf(buf + count, "    type  |  status  |  id  | pipe | z | pre_mult |    alpha   | colorkey |  format  | framebuffer |  	   source crop      |       frame       |   trd   |         address\n");
+		count += sprintf(buf + count, "----------+--------+------+------+---+----------+------------+----------+----------+-------------+-----------------------+-------------------+---------+-----------------------------\n");
+		num_layers = 4;
+		/* layer info */
+		for(layer_id=0; layer_id<num_layers; layer_id++) {
+			__disp_layer_info_t layer_para;
+			int ret;
+
+			ret = BSP_disp_layer_get_para(screen_id, IDTOHAND(layer_id), &layer_para);
+			if(ret == 0) {
+				count += sprintf(buf + count, " %8s |", (layer_para.mode == DISP_LAYER_WORK_MODE_SCALER)? "SCALER":"NORAML");
+				count += sprintf(buf + count, " %8s |", BSP_disp_layer_is_open(screen_id, IDTOHAND(layer_id))? "enable":"disable");
+				count += sprintf(buf + count, " %4d |", layer_id);
+				count += sprintf(buf + count, " %4d |", layer_para.pipe);
+				count += sprintf(buf + count, " %1d |", layer_para.prio);
+				count += sprintf(buf + count, " %8s |", (layer_para.fb.pre_multiply)? "Y":"N");
+				count += sprintf(buf + count, " %5s(%3d) |", (layer_para.alpha_en)? "globl":"pixel", layer_para.alpha_val);
+				count += sprintf(buf + count, " %8s |", (layer_para.ck_enable)? "enable":"disable");
+				count += sprintf(buf + count, " %2d,%2d,%2d |", layer_para.fb.mode, layer_para.fb.format, layer_para.fb.seq);
+				count += sprintf(buf + count, " [%4d,%4d] |", layer_para.fb.size.width, layer_para.fb.size.height);
+				count += sprintf(buf + count, " [%4d,%4d,%4d,%4d] |", layer_para.src_win.x, layer_para.src_win.y, layer_para.src_win.width, layer_para.src_win.height);
+				count += sprintf(buf + count, " [%4d,%4d,%4d,%4d] |", layer_para.scn_win.x, layer_para.scn_win.y, layer_para.scn_win.width, layer_para.scn_win.height);
+				count += sprintf(buf + count, " [%1d%1d,%1d%1d] |", layer_para.fb.b_trd_src, layer_para.fb.trd_mode, layer_para.b_trd_out, layer_para.out_trd_mode);
+				count += sprintf(buf + count, " [%8x,%8x,%8x] |", layer_para.fb.addr[0], layer_para.fb.addr[1], layer_para.fb.addr[2]);
+				count += sprintf(buf + count, "\n");
+			}
+		}
+		//count += sprintf(buf + count, "\n\tsmart backlight: %s\n", BSP_disp_drc_get_enable(screen_id)? "enable":"disable");
+
+	}
+
+	return count;
+}
+
+static ssize_t disp_sys_status_store(struct device *dev,
+        struct device_attribute *attr,
+        const char *buf, size_t count)
+{
+  return count;
+}
+
+static DEVICE_ATTR(sys_status, S_IRUGO|S_IWUSR|S_IWGRP,
+    disp_sys_status_show, disp_sys_status_store);
+
 
 #define ____SEPARATOR_REG_DUMP____
 static ssize_t disp_reg_dump_show(struct device *dev,struct device_attribute *attr, char *buf)
@@ -1061,6 +1140,7 @@ static struct attribute *disp_attributes[] = {
         &dev_attr_print_cmd_level.attr,
         &dev_attr_cmd_print.attr,
         &dev_attr_debug.attr,
+        &dev_attr_sys_status.attr,
         NULL
 };
 

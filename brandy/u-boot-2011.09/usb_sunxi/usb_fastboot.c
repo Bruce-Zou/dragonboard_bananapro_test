@@ -28,10 +28,6 @@
 #include <fastboot.h>
 #include "usb_fastboot.h"
 #include <android_misc.h>
-#include <sunxi_board.h>
-#include <pmu.h>
-#include <sunxi_mbr.h>
-#include "../sprite/sparse/sparse.h"
 
 static  int sunxi_usb_fastboot_write_enable = 0;
 static  int sunxi_usb_fastboot_status = SUNXI_USB_FASTBOOT_IDLE;
@@ -41,8 +37,6 @@ static  fastboot_trans_set_t  trans_data;
 static  uint  all_download_bytes;
 
 int     fastboot_data_flag;
-
-extern int sunxi_usb_exit(void);
 /*
 *******************************************************************************
 *                     do_usb_req_set_interface
@@ -432,7 +426,7 @@ static int __sunxi_fastboot_send_status(void *buffer, unsigned int buffer_size)
 *
 *******************************************************************************
 */
-static int __fastboot_reboot(int word_mode)
+static int __fastboot_reboot(void)
 {
 	char response[8];
 
@@ -440,9 +434,57 @@ static int __fastboot_reboot(int word_mode)
 	__sunxi_fastboot_send_status(response, strlen(response));
 	__msdelay(1000); /* 1 sec */
 
-	sunxi_board_restart(word_mode);
+	do_reset(NULL, 0, 0, NULL);
 
 	return 0;
+}
+/*
+*******************************************************************************
+*                     __fastboot_reboot
+*
+* Description:
+*    void
+*
+* Parameters:
+*    void
+*
+* Return value:
+*    void
+*
+* note:
+*    void
+*
+*******************************************************************************
+*/
+static int __fastboot_reboot_bootloader(void)
+{
+	char   misc_args[2048];
+	struct bootloader_message *misc_message = (struct bootloader_message *)misc_args;
+	uint   misc_offset;
+
+	tick_printf("reboot-bootloader\n");
+	misc_offset = sunxi_partition_get_offset_byname("misc");
+	if(!misc_offset)
+	{
+		puts("no misc partition is found\n");
+	}
+	else
+	{
+		if(!sunxi_flash_read(misc_offset, 2048/512, misc_args))
+		{
+			printf("read misc args error\n");
+		}
+		else
+		{
+			strcpy(misc_message->command, "bootloader");
+			if(!sunxi_flash_write(misc_offset, 2048/512, misc_args))
+			{
+				printf("write misc args error\n");
+			}
+		}
+	}
+
+	return __fastboot_reboot();
 }
 /*
 *******************************************************************************
@@ -538,7 +580,7 @@ static int __erase_part(char *name)
 static int __flash_to_part(char *name)
 {
 	char *addr = trans_data.base_recv_buffer;
-	u32   start, data_sectors;
+	u32   start, unerased_sectors;
 	u32   part_sectors;
 	u32   nblock = FASTBOOT_TRANSFER_BUFFER_SIZE/512;
 	char  response[68];
@@ -572,59 +614,43 @@ static int __flash_to_part(char *name)
 	}
 	else
 	{
-		int  format;
-
 		printf("ready to download bytes 0x%x\n", trans_data.try_to_recv);
-		format = unsparse_probe(addr, trans_data.try_to_recv, start);
+	    unerased_sectors = (trans_data.try_to_recv + 511)/512;
+	    if(unerased_sectors > part_sectors)
+	    {
+	    	printf("sunxi fastboot download FAIL: partition %s size 0x%x is smaller than data size 0x%x\n", name, trans_data.act_recv, unerased_sectors * 512);
+			sprintf(response, "FAILdownload: partition size < data size");
 
-		if(ANDROID_FORMAT_DETECT == format)
+			__sunxi_fastboot_send_status(response, strlen(response));
+
+			return -1;
+	    }
+
+		while(unerased_sectors >= nblock)
 		{
-			if(unsparse_direct_write(addr, trans_data.try_to_recv))
+			if(!sunxi_flash_write(start, nblock, addr))
 			{
 				printf("sunxi fastboot download FAIL: failed to write partition %s \n", name);
 				sprintf(response,"FAILdownload: write partition %s err", name);
 
+				__sunxi_fastboot_send_status(response, strlen(response));
+
 				return -1;
 			}
+			start += nblock;
+			unerased_sectors -= nblock;
+			addr  += FASTBOOT_TRANSFER_BUFFER_SIZE;
 		}
-		else
+		if(unerased_sectors)
 		{
-		    data_sectors = (trans_data.try_to_recv + 511)/512;
-		    if(data_sectors > part_sectors)
-		    {
-		    	printf("sunxi fastboot download FAIL: partition %s size 0x%x is smaller than data size 0x%x\n", name, trans_data.act_recv, data_sectors * 512);
-				sprintf(response, "FAILdownload: partition size < data size");
+			if(!sunxi_flash_write(start, unerased_sectors, addr))
+			{
+				printf("sunxi fastboot download FAIL: failed to write partition %s \n", name);
+				sprintf(response,"FAILdownload: write partition %s err", name);
 
 				__sunxi_fastboot_send_status(response, strlen(response));
 
 				return -1;
-		    }
-			while(data_sectors >= nblock)
-			{
-				if(!sunxi_flash_write(start, nblock, addr))
-				{
-					printf("sunxi fastboot download FAIL: failed to write partition %s \n", name);
-					sprintf(response,"FAILdownload: write partition %s err", name);
-
-					__sunxi_fastboot_send_status(response, strlen(response));
-
-					return -1;
-				}
-				start += nblock;
-				data_sectors -= nblock;
-				addr  += FASTBOOT_TRANSFER_BUFFER_SIZE;
-			}
-			if(data_sectors)
-			{
-				if(!sunxi_flash_write(start, data_sectors, addr))
-				{
-					printf("sunxi fastboot download FAIL: failed to write partition %s \n", name);
-					sprintf(response,"FAILdownload: write partition %s err", name);
-
-					__sunxi_fastboot_send_status(response, strlen(response));
-
-					return -1;
-				}
 			}
 		}
 	}
@@ -668,7 +694,7 @@ static int __try_to_download(char *download_size, char *response)
 		/* bad user input */
 		sprintf(response, "FAILdownload: data size is 0");
 	}
-	else if (trans_data.try_to_recv > SUNXI_USB_FASTBOOT_BUFFER_MAX)
+	else if (trans_data.try_to_recv > FASTBOOT_TRANSFER_BUFFER_SIZE)
 	{
 		sprintf(response, "FAILdownload: data > buffer");
 	}
@@ -684,6 +710,17 @@ static int __try_to_download(char *download_size, char *response)
 
 	return ret;
 }
+
+static void set_env(char *var, char *val)
+{
+	char *setenv[4]  = { "setenv", NULL, NULL, NULL, };
+
+	setenv[1] = var;
+	setenv[2] = val;
+
+	do_env_set(NULL, 0, 3, setenv);
+}
+
 /*
 *******************************************************************************
 *                     __boot
@@ -741,7 +778,7 @@ static void __boot(void)
 			if (strlen ((char *) &fb_hdr->cmdline[0])) {
 				printf("Image has cmdline:");
 				printf("%s\n", &fb_hdr->cmdline[0]);
-				setenv ("bootargs", (char *) &fb_hdr->cmdline[0]);
+				set_env ("bootargs", (char *) &fb_hdr->cmdline[0]);
 			}
 			do_bootm (NULL, 0, 2, bootm);
 		} else {
@@ -780,7 +817,6 @@ static void __get_var(char *ver_name)
 {
 	char response[68];
 
-	memset(response, 0, 68);
 	strcpy(response,"OKAY");
 
 	if(!strcmp(ver_name, "version"))
@@ -797,17 +833,11 @@ static void __get_var(char *ver_name)
 	}
 	else if(!strcmp(ver_name, "downloadsize"))
 	{
-		sprintf(response + 4, "0x%08x", SUNXI_USB_FASTBOOT_BUFFER_MAX);
-		printf("response: %s\n", response);
+		sprintf(response + 4, "%08x", FASTBOOT_TRANSFER_BUFFER_SIZE);
 	}
 	else if(!strcmp(ver_name, "secure"))
 	{
 		strcpy(response + 4, "yes");
-	}
-	else if(!strcmp(ver_name, "max-download-size"))
-	{
-		sprintf(response + 4, "0x%08x", SUNXI_USB_FASTBOOT_BUFFER_MAX);
-		printf("response: %s\n", response);
 	}
 	else
 	{
@@ -817,145 +847,6 @@ static void __get_var(char *ver_name)
 	__sunxi_fastboot_send_status(response, strlen(response));
 
 	return ;
-}
-/*
-************************************************************************************************************
-*
-*                                             function
-*
-*    name          :
-*
-*    parmeters     :
-*
-*    return        :
-*
-*    note          :
-*
-*
-************************************************************************************************************
-*/
-static void __oem_operation(char *operation)
-{
-	char response[68];
-	char lock_info[64];
-	int  lockflag;
-	int  ret;
-
-	memset(lock_info, 0, 64);
-	memset(response, 0, 68);
-
-	if(!strncmp(operation, "lock", 4))
-	{
-		lockflag = SUNXI_RELOCKING;
-	}
-	else if(!strncmp(operation, "unlock", 6))
-	{
-		lockflag = SUNXI_UNLOCK;
-	}
-	else
-	{
-		if(!strncmp(operation, "efex", 4))
-		{
-			strcpy(response, "OKAY");
-			__sunxi_fastboot_send_status(response, strlen(response));
-
-			sunxi_board_run_fel();
-		}
-		else
-		{
-			const char *info = "fastboot oem operation fail: unknown cmd";
-
-			printf("%s\n", info);
-			strcpy(response, "FAIL");
-			strcat(response, info);
-
-			__sunxi_fastboot_send_status(response, strlen(response));
-		}
-
-		return ;
-	}
-
-	ret = sunxi_oem_op_lock(lockflag, lock_info, 0);
-	if(!ret)
-	{
-		strcpy(response, "OKAY");
-	}
-	else
-	{
-		strcpy(response, "FAIL");
-	}
-	strcat(response, lock_info);
-	printf("%s\n", response);
-
-	__sunxi_fastboot_send_status(response, strlen(response));
-
-	return ;
-}
-/*
-************************************************************************************************************
-*
-*                                             function
-*
-*    name          :
-*
-*    parmeters     :
-*
-*    return        :
-*
-*    note          :
-*
-*
-************************************************************************************************************
-*/
-static void __continue(void)
-{
-	char response[32];
-
-	memset(response, 0, 32);
-	strcpy(response,"OKAY");
-
-	__sunxi_fastboot_send_status(response, strlen(response));
-
-	sunxi_usb_exit();
-
-	if(uboot_spare_head.boot_data.storage_type)
-	{
-		setenv("bootcmd", "run setargs_mmc boot_normal");
-	}
-	else
-	{
-		setenv("bootcmd", "run setargs_nand boot_normal");
-	}
-	do_bootd(NULL, 0, 1, NULL);
-
-	return;
-}
-/*
-************************************************************************************************************
-*
-*                                             function
-*
-*    name          :
-*
-*    parmeters     :
-*
-*    return        :
-*
-*    note          :
-*
-*
-************************************************************************************************************
-*/
-static void __unsupported_cmd(void)
-{
-	char response[32];
-
-	memset(response, 0, 32);
-	strcpy(response,"FAIL");
-
-	__sunxi_fastboot_send_status(response, strlen(response));
-
-	return;
 }
 /*
 ************************************************************************************************************
@@ -1220,12 +1111,12 @@ static int sunxi_fastboot_state_loop(void  *buffer)
 			if(memcmp(sunxi_ubuf->rx_req_buffer, "reboot-bootloader", strlen("reboot-bootloader")) == 0)
 			{
 				tick_printf("reboot-bootloader\n");
-				__fastboot_reboot(PMU_PRE_FASTBOOT_MODE);
+				__fastboot_reboot_bootloader();
 			}
             else if(memcmp(sunxi_ubuf->rx_req_buffer, "reboot", 6) == 0)
 			{
 				tick_printf("reboot\n");
-				__fastboot_reboot(0);
+				__fastboot_reboot();
 			}
 			else if(memcmp(sunxi_ubuf->rx_req_buffer, "erase:", 6) == 0)
 			{
@@ -1258,21 +1149,6 @@ static int sunxi_fastboot_state_loop(void  *buffer)
 			{
 				tick_printf("getvar\n");
 				__get_var((char *)(sunxi_ubuf->rx_req_buffer + 7));
-			}
-			else if(memcmp(sunxi_ubuf->rx_req_buffer, "oem", 3) == 0)
-			{
-				tick_printf("oem operations\n");
-				__oem_operation((char *)(sunxi_ubuf->rx_req_buffer + 4));
-			}
-			else if(memcmp(sunxi_ubuf->rx_req_buffer, "continue", 8) == 0)
-			{
-				tick_printf("continue\n");
-				__continue();
-			}
-			else
-			{
-				tick_printf("not supported fastboot cmd\n");
-				__unsupported_cmd();
 			}
 
 			break;

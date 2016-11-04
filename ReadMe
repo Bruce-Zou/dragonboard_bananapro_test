@@ -1,0 +1,7 @@
+Factory PCBA test software for banana
+
+Build:
+./build.sh -p sun7i_dragonboard
+
+Pack:
+./build.sh pack

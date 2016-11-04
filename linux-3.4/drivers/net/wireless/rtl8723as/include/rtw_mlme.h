@@ -414,12 +414,6 @@ struct mlme_priv {
 	u8	assoc_bssid[6];
 
 	struct wlan_network	cur_network;
-	struct wlan_network *cur_network_scanned;
-#ifdef CONFIG_ARP_KEEP_ALIVE
-	// for arp offload keep alive
-	u8	gw_mac_addr[6];
-	u8	gw_ip[4];
-#endif
 
 	//uint wireless_mode; no used, remove it
 
@@ -438,7 +432,7 @@ struct mlme_priv {
 	ATOMIC_T set_scan_deny; //0: allowed, 1: deny
 	#endif
 
-	#ifdef CONFIG_DETECT_C2H_BY_POLLING
+	#ifdef CONFIG_DETECT_CPWM_AND_C2H_BY_POLLING
 	_timer event_polling_timer;
 	#endif
 
@@ -462,6 +456,7 @@ struct mlme_priv {
 	RT_LINK_DETECT_T	LinkDetectInfo;
 	_timer	dynamic_chk_timer; //dynamic/periodic check timer
 
+ 	u8 	key_mask; //use for ips to set wep key after ips_leave
 	u8	acm_mask; // for wmm acm mask
 	u8	ChannelPlan;
 	RT_SCAN_TYPE 	scan_mode; // active: 1, passive: 0
@@ -662,7 +657,7 @@ extern void rtw_free_mlme_priv (struct mlme_priv *pmlmepriv);
 
 
 extern sint rtw_select_and_join_from_scanned_queue(struct mlme_priv *pmlmepriv);
-extern sint rtw_set_key(_adapter *adapter,struct security_priv *psecuritypriv,sint keyid, u8 set_tx, bool enqueue);
+extern sint rtw_set_key(_adapter *adapter,struct security_priv *psecuritypriv,sint keyid, u8 set_tx);
 extern sint rtw_set_auth(_adapter *adapter,struct security_priv *psecuritypriv);
 
 __inline static u8 *get_bssid(struct mlme_priv *pmlmepriv)
@@ -801,7 +796,7 @@ void rtw_set_scan_deny(_adapter *adapter, u32 ms);
 #define rtw_set_scan_deny(adapter, ms) do {} while (0)
 #endif
 
-#ifdef CONFIG_DETECT_C2H_BY_POLLING
+#ifdef CONFIG_DETECT_CPWM_AND_C2H_BY_POLLING
 extern void rtw_event_polling_timer_hdl(_adapter *adapter);
 #endif
 
@@ -858,8 +853,7 @@ u8 rtw_to_roaming(_adapter *adapter);
 #define rtw_to_roaming(adapter) 0
 #endif
 
-void rtw_sta_media_status_rpt(_adapter *adapter,struct sta_info *psta, u32 mstatus);
-
+void rtw_stassoc_hw_rpt(_adapter *adapter,struct sta_info *psta);
 #ifdef CONFIG_INTEL_PROXIM
 void rtw_proxim_enable(_adapter *padapter);
 void rtw_proxim_disable(_adapter *padapter);

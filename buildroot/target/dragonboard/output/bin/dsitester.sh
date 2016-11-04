@@ -45,11 +45,11 @@ tmp_pin33=`script_fetch "dsi" "gpio_pin33"`
 tmp_pin34=`script_fetch "dsi" "gpio_pin34"`
 
 
-#if [ -z "$tmp_pin1" ]; then
-#	echo "gpio_pin not config"
-#	SEND_CMD_PIPE_FAIL $3
-#    exit 1        
-#else
+if [ -z "$tmp_pin1" ]; then
+	echo "gpio_pin not config"
+	SEND_CMD_PIPE_FAIL $3
+    exit 1        
+else
 	tmp1=${tmp_pin1%%<*}
 	gpio_pin1=${tmp1#*:}
 
@@ -151,7 +151,9 @@ tmp_pin34=`script_fetch "dsi" "gpio_pin34"`
 
         tmp34=${tmp_pin34%%<*}
         gpio_pin34=${tmp34#*:}
-#fi
+fi
+
+
 
 #if [ ! -d "/sys/class/gpio_sw/${gpio_pin[$nr]}" ]; then
 #	echo "mabey cant intall gpio-sunxi.ko"
@@ -200,10 +202,10 @@ for nr in [ 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26
 	temp_data=pin_data$nr                  
         eval temp_data=\$$temp_data  
 	echo 1 > ${temp_data}
-#	if [ $? -ne 0 ]; then
-#		SEND_CMD_PIPE_FAIL $3
-#		exit 1
-#	fi
+	if [ $? -ne 0 ]; then
+		SEND_CMD_PIPE_FAIL $3
+		exit 1
+	fi
 done
 	sleep 2
 
@@ -211,10 +213,10 @@ for nr in [ 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26
 	temp_data=pin_data$nr
         eval temp_data=\$$temp_data 
 	echo 0 > ${temp_data}
-#	if [ $? -ne 0 ]; then
-#		SEND_CMD_PIPE_FAIL $3
-#		exit 1
-#	fi
+	if [ $? -ne 0 ]; then
+		SEND_CMD_PIPE_FAIL $3
+		exit 1
+	fi
 done
 
 	SEND_CMD_PIPE_OK $3

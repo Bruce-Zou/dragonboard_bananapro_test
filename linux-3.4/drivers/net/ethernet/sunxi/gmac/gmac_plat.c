@@ -47,11 +47,11 @@ static int gmac_system_init(struct gmac_priv *priv)
 	int reg_value;
 	// configure system io 
 	if(priv->gpiobase){
-		writel(0x55555555, priv->gpiobase + PA_CFG0);
+		writel(0x22222222, priv->gpiobase + PA_CFG0);
 
-		writel(0x50555505, priv->gpiobase + PA_CFG1);
+		writel(0x22222222, priv->gpiobase + PA_CFG1);
 
-		writel(0x00000005, priv->gpiobase + PA_CFG2);
+		writel(0x00000022, priv->gpiobase + PA_CFG2);
 	}
 #else
 	int i = 0;
@@ -75,30 +75,6 @@ static int gmac_system_init(struct gmac_priv *priv)
 		goto gpio_err;
 	}
 
-#ifdef GMAC_PHY_POWER
-
-	priv->gpio_power_hd = kmalloc(sizeof(script_item_u), GFP_KERNEL);
-	if(NULL == priv->gpio_power_hd){
-        printk(KERN_ERR "can't request memory for mos_gpio!!\n");
-    } else {
-        if(SCIRPT_ITEM_VALUE_TYPE_PIO != script_get_item("gmac_phy_power", "gmac_phy_power_en", priv->gpio_power_hd)){
-            printk(KERN_ERR "can't get item for emac_power gpio !\n");
-            kfree(priv->gpio_power_hd);
-            priv->gpio_power_hd = NULL;
-        } else {
-            if(gpio_request(priv->gpio_power_hd->gpio.gpio, "gmac_phy_power")){
-                printk(KERN_ERR "GPIO request for emac_power failed!\n");
-                kfree(priv->gpio_power_hd);
-                priv->gpio_power_hd = NULL;
-            }
-        }
-        printk("MIKEY(20130818): gpio_direction_output\n");
-        gpio_direction_output(priv->gpio_power_hd->gpio.gpio,1);
-        __gpio_set_value(priv->gpio_power_hd->gpio.gpio, priv->gpio_power_hd->gpio.data);
-        mdelay(200);
-    }
-
-#endif
 gpio_err:
 	if(unlikely(ret)){
 		while(priv->gpio_hd && i--)
@@ -254,14 +230,6 @@ static void gmac_sys_release(struct platform_device *pdev)
 	}
 #endif
 
-#ifdef GMAC_PHY_POWER
-    
-    if (priv->gpio_power_hd){
-        gpio_free(priv->gpio_power_hd->gpio.gpio);
-        kfree(priv->gpio_power_hd);
-        priv->gpio_power_hd = NULL;
-    }
-#endif
 	iounmap(priv->gmac_clk_reg);
 
 #ifndef CONFIG_GMAC_CLK_SYS

@@ -82,8 +82,7 @@ extern int standby_i2c_write(uchar chip, uint addr, int alen, uchar *buffer, int
 */
 __s32 boot_power_set_dcdc2(int set_vol)
 {
-    __u32 vol, tmp; 
-	volatile __u32 i;
+    __u32 vol, tmp, i;
     __u8  reg_addr, value;
 
 	if(set_vol == -1)
@@ -966,36 +965,34 @@ __s32 boot_power_int_enable(void)
     __u8  int_enable[5];
     int	  i;
 
-    for(i=0;i<5;i++)
+    reg_addr = BOOT_POWER20_INTEN1;
+    /*if(BOOT_TWI_ReadEx(AXP20_ADDR, &reg_addr, power_int_value, 5))*/
+    if(standby_i2c_read(AXP20_ADDR, reg_addr, 1, power_int_value, 5))
     {
-        reg_addr = BOOT_POWER20_INTEN1 + i;
-        if(standby_i2c_read(AXP20_ADDR, reg_addr, 1, power_int_value + i, 1))
-        {
-            return -1;
-        }
-    }	
+        return -1;
+    }
 
-    int_enable[0] = 0x2C;	//开启：VBUS移除，ACIN移除
-    int_enable[1] = 0;		//开启：充电完成
-    int_enable[2] = 0x3;	//开启：电源按键短按，长按
-    int_enable[3] = 0;
-    int_enable[4] = 0;
+	int_enable[0] = 0x2C;	//开启：VBUS移除，ACIN移除
+	int_enable[1] = 0;		//开启：充电完成
+	int_enable[2] = 0x3;	//开启：电源按键短按，长按
+	int_enable[3] = 0;
+	int_enable[4] = 0;
 
-    for(i=0;i<5;i++)
-    {
-        reg_addr = BOOT_POWER20_INTEN1 + i;
+	for(i=0;i<5;i++)
+	{
+		reg_addr = BOOT_POWER20_INTEN1 + i;
         /*if(BOOT_TWI_Write(AXP20_ADDR, &reg_addr, int_enable + i))*/
-        if(standby_i2c_write(AXP20_ADDR, reg_addr, 1, &int_enable[i], 1))
-        {
-            return -1;
-        }
+    	if(standby_i2c_write(AXP20_ADDR, reg_addr, 1, &int_enable[i], 1))
+    	{
+        	return -1;
+    	}
     }
 
     writel(0x0,NMI_CTL_REG);
     writel(0x1,NMI_IRG_PENDING_REG);
     writel(0x1,NMI_INT_ENABLE_REG);
-
-    return 0;
+    
+	return 0;
 }
 /*
 ************************************************************************************************************
@@ -1085,29 +1082,6 @@ __s32 boot_power_int_query(__u8 *int_status)
 
 	return 0;
 }
-
-int standby_axp_probe_usb(void)
-{
-	u8  reg_value;
-
-	if(standby_i2c_read(AXP20_ADDR, BOOT_POWER20_INTSTS1, 1, &reg_value, 1))
-    {
-        return -1;
-    }
-    reg_value &= 0x08;
-	if(reg_value)
-	{
-		if(standby_i2c_write(AXP20_ADDR, BOOT_POWER20_INTSTS1, 1, &reg_value, 1))
-	    {
-	        return -1;
-	    }
-	}
-	return reg_value;
-}
-
-
-
-
 /*
 ************************************************************************************************************
 *

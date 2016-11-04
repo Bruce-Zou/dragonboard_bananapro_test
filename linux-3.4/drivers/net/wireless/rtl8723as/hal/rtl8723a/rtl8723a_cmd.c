@@ -255,7 +255,7 @@ void rtl8192c_Add_RateATid(PADAPTER pAdapter, u32 bitmap, u8 arg, u8 rssi_level)
 void rtl8723a_set_FwPwrMode_cmd(PADAPTER padapter, u8 Mode)
 {
 	SETPWRMODE_PARM H2CSetPwrMode;
-	struct pwrctrl_priv *pwrpriv = adapter_to_pwrctl(padapter);
+	struct pwrctrl_priv *pwrpriv = &padapter->pwrctrlpriv;
 
 _func_enter_;
 
@@ -281,28 +281,6 @@ _func_enter_;
 
 _func_exit_;
 }
-
-
-void rtl8723a_set_FwMediaStatus_cmd(PADAPTER padapter, u16 mstatus_rpt )
-{
-	u8 opmode,macid;
-	u16 mst_rpt = cpu_to_le16 (mstatus_rpt);
-	u32 reg_macid_no_link = REG_MACID_NO_LINK;
-	opmode = (u8) mst_rpt;
-	macid = (u8)(mst_rpt >> 8)  ;
-	DBG_871X("### %s: MStatus=%x MACID=%d \n", __FUNCTION__,opmode,macid);
-
-	//Delete select macid (MACID 0~63) from queue list.
-	if(opmode == 1)// 1:connect
-	{
-		rtw_write32(padapter,reg_macid_no_link, (rtw_read32(padapter,reg_macid_no_link) & (~BIT(macid))));
-	}
-	else//0: disconnect
-	{
-		rtw_write32(padapter,reg_macid_no_link, (rtw_read32(padapter,reg_macid_no_link)|BIT(macid)));
-	}
-}
-
 
 void ConstructBeacon(_adapter *padapter, u8 *pframe, u32 *pLength)
 {
@@ -975,7 +953,7 @@ void rtl8723a_set_BTCoex_AP_mode_FwRsvdPkt_cmd(PADAPTER padapter)
 void rtl8192c_set_p2p_ps_offload_cmd(_adapter* padapter, u8 p2p_ps_state)
 {
 	HAL_DATA_TYPE	*pHalData = GET_HAL_DATA(padapter);
-	struct pwrctrl_priv		*pwrpriv = adapter_to_pwrctl(padapter);
+	struct pwrctrl_priv		*pwrpriv = &padapter->pwrctrlpriv;
 	struct wifidirect_info	*pwdinfo = &( padapter->wdinfo );
 	struct P2P_PS_Offload_t	*p2p_ps_offload = &pHalData->p2p_ps_offload;
 	u8	i;

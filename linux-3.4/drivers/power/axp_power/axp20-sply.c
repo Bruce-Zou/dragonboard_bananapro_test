@@ -255,14 +255,14 @@ static void axp_set_startup_sequence(struct axp_charger *charger)
 		axp_reads(charger->master,0xF2,1,&val);
 		DBG_PSY_MSG("axp209 REGF2  = %x\n",val);
 		axp_write(charger->master,0xFF,0x01);
-		axp_reads(charger->master,0xF2,1,&val);
+		axp_reads(charger->master,0xFF,1,&val);
 		DBG_PSY_MSG("first axp209 REGFF  = %x\n",val);
 		axp_reads(charger->master,0x03,1,&val);
 		DBG_PSY_MSG("axp209 REG103  = %x\n",val);
 		axp_reads(charger->master,0x04,1,&val);
 		DBG_PSY_MSG("axp209 REG104  = %x\n",val);
-		axp_write(charger->master,0xFF,0x01);
-		axp_reads(charger->master,0xF2,1,&val);
+		axp_write(charger->master,0xFF,0x00);
+		axp_reads(charger->master,0xFF,1,&val);
 		DBG_PSY_MSG("after axp209 REGFF  = %x\n",val);
 		}
 }
@@ -2258,7 +2258,7 @@ static int axp20_suspend(struct platform_device *dev, pm_message_t state)
 	}
 	printk("[suspend]pmu_suspendpwroff_vol val = 0x%x\n",val);
 	axp_write(axp_charger->master, AXP20_APS_WARNING1,val);
-	axp_write(axp_charger->master, AXP20_APS_WARNING2,(val-0x23));
+	axp_write(axp_charger->master, AXP20_APS_WARNING1,(val-0x23));
     return 0;
 }
 

@@ -55,10 +55,7 @@ int do_boota (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	image_header_t *hdr =(image_header_t *)(addr + CFG_FASTBOOT_MKBOOTIMAGE_PAGE_SIZE);
 	/* save the image header somewhere */
 	memcpy(boot_hdr, (void*) addr, sizeof(*hdr));
-
-	/* add code for signature */
-	do_sunxi_boot_signature(NULL, 0, 0, NULL);
-
+	
 	if (memcmp(fb_hdr->magic, FASTBOOT_BOOT_MAGIC, 8)) {
 		puts("boota: bad boot image magic, maybe not a boot.img?\n");
 		return 1;
@@ -90,7 +87,7 @@ int do_boota (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	memcpy((void*) fb_hdr->ramdisk_addr, (const void *)raddr, fb_hdr->ramdisk_size);
 
 	tick_printf("ready to boot\n");
-
+	
 	do_boota_linux(fb_hdr);
 
 	puts("Boot linux failed, control return to monitor\n");

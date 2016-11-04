@@ -146,7 +146,6 @@ extern int script_parser_mainkey_get_gpio_cfg(char *main_name, void *gpio_cfg, i
 /* gpio operations */
 extern int gpio_init(void);
 extern int gpio_exit(void);
-extern int gpio_request_simple(char *main_name, const char *sub_name);
 extern unsigned gpio_request(user_gpio_set_t *gpio_list, unsigned group_count_max);
 extern unsigned gpio_request_ex(char *main_name, const char *sub_name);
 extern int gpio_release(unsigned p_handler, int if_release_to_default_status);

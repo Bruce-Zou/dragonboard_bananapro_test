@@ -92,8 +92,6 @@ typedef	struct	global_data {
 	int             script_main_key_count;
 	int             force_shell;
 	uint            malloc_noncache_start;
-	int             lockflag;
-	uint            chargemode;
 #endif
 	void		**jt;		/* jump table */
 	char		env_buf[32];	/* buffer for getenv() before reloc. */

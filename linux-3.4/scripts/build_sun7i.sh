@@ -59,8 +59,6 @@ build_standby()
             silentoldconfig
     fi
     make ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} KDIR=${LICHEE_KDIR} \
-        -C ${LICHEE_KDIR}/arch/arm/mach-sun7i/pm/dram-freq all
-    make ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} KDIR=${LICHEE_KDIR} \
         -C ${LICHEE_KDIR}/arch/arm/mach-sun7i/pm/standby all
 }
 
@@ -90,7 +88,7 @@ copy_nand_mod()
 
     mkdir -p ./skel/lib/modules/${KERNEL_VERSION}
     cp ${LICHEE_MOD_DIR}/nand.ko ./skel/lib/modules/${KERNEL_VERSION}
-    cp ${LICHEE_MOD_DIR}/hdmi.ko ./skel/lib/modules/${KERNEL_VERSION}
+    #cp ${LICHEE_MOD_DIR}/hdmi.ko ./skel/lib/modules/${KERNEL_VERSION}
     if [ $? -ne 0 ]; then
         echo "copy nand module error: $?"
         exit 1
@@ -163,7 +161,7 @@ build_modules()
         install
 
     build_hdmi_lib
-    make -C drivers/video/sun7i/hdmi LICHEE_MOD_DIR=${LICHEE_MOD_DIR} LICHEE_KDIR=${LICHEE_KDIR} \
+    make -C drivers/video/sun7i/hdmi/aw LICHEE_MOD_DIR=${LICHEE_MOD_DIR} LICHEE_KDIR=${LICHEE_KDIR} \
     install
 
     copy_nand_mod

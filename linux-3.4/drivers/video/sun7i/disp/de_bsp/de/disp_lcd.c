@@ -8,6 +8,7 @@ static __lcd_flow_t         open_flow[2];
 static __lcd_flow_t         close_flow[2];
 __panel_para_t              gpanel_info[2];
 static __lcd_panel_fun_t    lcd_panel_fun[2];
+extern __bool hdmi_request_close_flag;
 
 void LCD_get_reg_bases(__reg_bases_t *para)
 {
@@ -699,15 +700,6 @@ void TCON_close(__u32 sel)
         }
 }
 
-int TCON_get_open_status(__u32 screen_id)
-{
-	if(gdisp.screen[screen_id].lcdc_status & (LCDC_TCON0_USED | LCDC_TCON1_USED)) {
-		return 1;
-	} else {
-		return 0;
-	}
-}
-
 
 static __u32 pwm_read_reg(__u32 offset)
 {
@@ -1109,6 +1101,13 @@ __s32 Disp_lcdc_event_proc(void *parg)
 {
         __u32  lcdc_flags;
         __u32 sel = (__u32)parg;
+				if (hdmi_request_close_flag){
+					if(gdisp.init_para.hdmi_close)
+						gdisp.init_para.hdmi_close();
+					else DE_WRN("hdmi_close is NULL\n");
+				hdmi_request_close_flag = 0;
+				DE_INF("###%s---hdmi_request_close_flag = 1",__func__);
+				}
 
         lcdc_flags=LCDC_query_int(sel);  
         LCDC_clear_int(sel,lcdc_flags);

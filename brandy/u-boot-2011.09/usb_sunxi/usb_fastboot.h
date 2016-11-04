@@ -52,7 +52,7 @@ char  *sunxi_usb_fastboot_dev[SUNXI_USB_FASTBOOT_DEV_MAX] = {	sunxi_fastboot_nor
 																SUNXI_FASTBOOT_DEVICE_INTERFACE
 															};
 
-#define  SUNXI_USB_FASTBOOT_BUFFER_MAX               (128 * 1024 * 1024)
+
 
 
 #define  SUNXI_USB_FASTBOOT_IDLE					 (0)
@@ -76,8 +76,8 @@ fastboot_trans_set_t;
 
 #define   SUNXI_FASTBOOT_SEND_MEM_SIZE   (64 * 1024)
 
-#define	  DEVICE_VENDOR_ID  					0x1F3A
-#define	  DEVICE_PRODUCT_ID 					0x1010
+#define	  DEVICE_VENDOR_ID  					0x0BB4
+#define	  DEVICE_PRODUCT_ID 					0x0FFF
 #define	  DEVICE_BCD        					0x0200
 
 #endif

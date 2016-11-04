@@ -87,10 +87,10 @@
 
 #define EVB
 //#define CUSTUM
-//#define ONE_CHANNEL
+#define ONE_CHANNEL
 #define MODE_0V2
 //#define MODE_0V15
-#define TWO_CHANNEL
+//#define TWO_CHANNEL
 #ifdef MODE_0V2
 //standard of key maping
 //0.2V mode	 
@@ -176,7 +176,7 @@ enum {
 	DEBUG_DATA_INFO = 1U << 2,
 	DEBUG_SUSPEND   = 1U << 3,
 };
-static u32 debug_mask = 0xf;
+static u32 debug_mask = 0;
 #define dprintk(level_mask, fmt, arg...)	if (unlikely(debug_mask & level_mask)) \
 	printk(KERN_DEBUG fmt , ## arg)
 
@@ -276,11 +276,8 @@ static irqreturn_t sw_isr_key(int irq, void *dummy)
                 dprintk(DEBUG_DATA_INFO, "key down\n");
 	}
 	
-	if(reg_val&(LRADC_ADC0_DATAPEND|LRADC_ADC1_DATAPEND)){
-		if (reg_val&LRADC_ADC0_DATAPEND)
-			key_val = readl(KEY_BASSADDRESS+LRADC_DATA0);
-		else if (reg_val&LRADC_ADC1_DATAPEND)
-			key_val = readl(KEY_BASSADDRESS+LRADC_DATA1);
+	if(reg_val&LRADC_ADC0_DATAPEND){
+		key_val = readl(KEY_BASSADDRESS+LRADC_DATA0);
                 dprintk(DEBUG_DATA_INFO, "key_val: 0x%x \n", key_val);
 		
 		if(key_val < 0x3f) {
@@ -343,7 +340,7 @@ static irqreturn_t sw_isr_key(int irq, void *dummy)
 		}
 	}
         
-	if(reg_val&(LRADC_ADC0_UPPEND|LRADC_ADC1_UPPEND)) {
+	if(reg_val&LRADC_ADC0_UPPEND) {
 		if(key_cnt > REPORT_START_NUM) {
 			if(INITIAL_VALUE != transfer_code) {
                                 dprintk(DEBUG_DATA_INFO, "report data: key_val :%8d transfer_code: %8d \n",
@@ -419,8 +416,6 @@ static int __init swkbd_init(void)
 	writel(FIRST_CONCERT_DLY|LEVELB_VOL|KEY_MODE_SELECT|LRADC_HOLD_EN|ADC_CHAN_SELECT|LRADC_SAMPLE_125HZ|LRADC_EN,KEY_BASSADDRESS + LRADC_CTRL);
 	//writel(FIRST_CONCERT_DLY|LEVELB_VOL|KEY_MODE_SELECT|ADC_CHAN_SELECT|LRADC_SAMPLE_62HZ|LRADC_EN,KEY_BASSADDRESS + LRADC_CTRL);
 #else
-	writel(LRADC_ADC0_DOWN_EN|LRADC_ADC1_DOWN_EN|LRADC_ADC0_UP_EN|LRADC_ADC1_UP_EN|LRADC_ADC0_DATA_EN|LRADC_ADC1_DATA_EN,KEY_BASSADDRESS + LRADC_INTC);
-	writel(FIRST_CONCERT_DLY|LEVELB_VOL|KEY_MODE_SELECT|LRADC_HOLD_EN|ADC_CHAN_SELECT|LRADC_SAMPLE_125HZ|LRADC_EN,KEY_BASSADDRESS + LRADC_CTRL);
 #endif
 
 	if (request_irq(SW_INT_IRQNO_LRADC, sw_isr_key, 0, "swkbd", NULL)){

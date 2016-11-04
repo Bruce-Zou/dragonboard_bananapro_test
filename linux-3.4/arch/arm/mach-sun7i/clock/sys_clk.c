@@ -84,7 +84,7 @@ static __aw_ccu_clk_id_e sys_clk_get_parent(__aw_ccu_clk_id_e id)
                 case 0:
                     return AW_SYS_CLK_HOSC;
                 case 1:
-                    return AW_SYS_CLK_PLL6;
+                    return AW_SYS_CLK_PLL62;
                 case 2:
                     return AW_SYS_CLK_LOSC;
                 case 3:
@@ -176,15 +176,27 @@ static __u64 sys_clk_get_rate(__aw_ccu_clk_id_e id)
             /*  FactorN=79, PreDiv=21, PostDiv=4, output=24*79/21/4=22.571mhz, 44.1k series fs
                 FactorN=86, PreDiv=21, PostDiv=4, output=24*86/21/4=24.571mhz, 48k series fs */
             tmpReg = *(volatile __u32 *)&aw_ccu_reg->Pll2Ctl;
-            if (((tmpReg >> 8) & 0x7f) == 79) {
+            //if (((tmpReg >> 8) & 0x7f) == 79) {
+            if (((tmpReg >> 8) & 0x7f) == 7) {
                 return 22579200; /* 22.571mhz ~= 22579200, 22579200*2/1024=44100 */
-            } else if (((tmpReg >> 8) & 0x7f) == 86) {
+            //} else if (((tmpReg >> 8) & 0x7f) == 86) {
+            } else if (((tmpReg >> 8) & 0x7f) == 14) {
                 return 24576000; /* 24.571mhz ~= 24576000, 24576000*2/1024=48000 */
             } else {
                 /* set audio pll to default value 24576000 */
                 tmpReg &= ~((0x1f << 0) | (0x7f << 8) | (0x0f << 26));
-                tmpReg |= (21 << 0) | (86 << 8) | (4 << 26);
+               // tmpReg |= (21 << 0) | (86 << 8) | (4 << 26);
+                tmpReg |= (1 << 0) | (14 << 8) | (14 << 26);
                 *(volatile __u32 *)&aw_ccu_reg->Pll2Ctl = tmpReg;
+
+                tmpReg = *(volatile __u32 *)(0xF1C2000C);
+                tmpReg &= ~(0x7FFFF);
+                tmpReg |= 0xAC02 ;
+                tmpReg &= ~(0x3<<29);
+                tmpReg |= 0x2<<29;
+                tmpReg |= (0x1u<<31);
+                *(volatile __u32 *)(0xF1C2000C) = tmpReg;
+
                 return 24576000;
             }
         }
@@ -313,7 +325,7 @@ static __u64 sys_clk_get_rate(__aw_ccu_clk_id_e id)
                     tmpApb1Rate = 24000000;
                     break;
                 case 1:
-                    tmpApb1Rate = sys_clk_get_rate(AW_SYS_CLK_PLL6);
+                    tmpApb1Rate = sys_clk_get_rate(AW_SYS_CLK_PLL62);
                     break;
                 case 2:
                     tmpApb1Rate = 32768;
@@ -403,7 +415,7 @@ static __s32 sys_clk_set_parent(__aw_ccu_clk_id_e id, __aw_ccu_clk_id_e parent)
                 case AW_SYS_CLK_HOSC:
                     aw_ccu_reg->Apb1ClkDiv.ClkSrc = 0;
                     break;
-                case AW_SYS_CLK_PLL6:
+                case AW_SYS_CLK_PLL62:
                     aw_ccu_reg->Apb1ClkDiv.ClkSrc = 1;
                     break;
                 default:
@@ -586,8 +598,18 @@ static int sys_clk_set_rate(__aw_ccu_clk_id_e id, __u64 rate)
 
                 tmpReg = *(volatile __u32 *)&aw_ccu_reg->Pll2Ctl;
                 tmpReg &= ~((0x1f << 0) | (0x7f << 8) | (0x0f << 26));
-                tmpReg |= (21 << 0) | (79 << 8) | (4 << 26);
+                //tmpReg |= (21 << 0) | (79 << 8) | (4 << 26);
+                tmpReg |= (1 << 0) | (7 << 8) | (8 << 26);
                 *(volatile __u32 *)&aw_ccu_reg->Pll2Ctl = tmpReg;
+
+                tmpReg = *(volatile __u32 *)(0xF1C2000C);
+                tmpReg &= ~(0x7FFFF);
+                tmpReg |= 0x10D84;
+                tmpReg &= ~(0x3<<29);
+                tmpReg |= 0x2<<29;
+                tmpReg |= (0x1u<<31);
+                *(volatile __u32 *)(0xF1C2000C) = tmpReg;
+
             } else if (rate == 24576000) {
                 /* FactorN=86, PreDiv=21, PostDiv=4,
                    output=24*86/21/4=24.571mhz, 48k series fs   */
@@ -595,8 +617,18 @@ static int sys_clk_set_rate(__aw_ccu_clk_id_e id, __u64 rate)
 
                 tmpReg = *(volatile __u32 *)&aw_ccu_reg->Pll2Ctl;
                 tmpReg &= ~((0x1f << 0) | (0x7f << 8) | (0x0f << 26));
-                tmpReg |= (21 << 0) | (86 << 8) | (4 << 26);
+                //tmpReg |= (21 << 0) | (86 << 8) | (4 << 26);
+                tmpReg |= (1 << 0) | (14 << 8) | (14 << 26);
                 *(volatile __u32 *)&aw_ccu_reg->Pll2Ctl = tmpReg;
+
+                tmpReg = *(volatile __u32 *)(0xF1C2000C);
+                tmpReg &= ~(0x7FFFF);
+                tmpReg |= 0xAC02;
+                tmpReg &= ~(0x3<<29);
+                tmpReg |= 0x2<<29;
+                tmpReg |= (0x1u<<31);
+                *(volatile __u32 *)(0xF1C2000C) = tmpReg;
+
             } else {
                 return -1;
             }

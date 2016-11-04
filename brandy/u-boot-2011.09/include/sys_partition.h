@@ -41,10 +41,6 @@ extern uint sunxi_partition_get_size_byname(const char *part_name);
 
 extern int sunxi_partition_get_info_byname(const char *part_name, uint *part_offset, uint *part_size);
 
-extern void *sunxi_partition_fetch_mbr(void);
-
-extern int sunxi_partition_refresh(void *buf, uint bytes);
-
 extern int sunxi_partition_init(void);
 
 

@@ -35,33 +35,11 @@
 
 static char nand_para_store[256];
 static int  flash_scaned;
-static struct _nand_info* g_nand_info = NULL;
-static int nand_partition_num;
-
-int  mbr_burned_flag;
-PARTITION_MBR nand_mbr = {0};
 
 extern int NAND_Print(const char * str, ...);
 
-
-
-int __NAND_UpdatePhyArch(void)
-{
-	printf("call null __NAND_UpdatePhyArch()!!!\n");
-    return 0;
-}
-int NAND_UpdatePhyArch(void)
-	__attribute__((weak, alias("__NAND_UpdatePhyArch")));
-
-
-//int __erase_last_phy_partition(struct _nand_info*nand_info)
-//{
-//	printf("call null __erase_last_phy_partition()!!!\n");
-//    return 0;
-//}
-//int erase_last_phy_partition(struct _nand_info*nand_info)
-//	__attribute__((weak, alias("__erase_last_phy_partition")));
-
+int  mbr_burned_flag;
+PARTITION_MBR nand_mbr = {0};
 
 int msg(const char * str, ...)
 {
@@ -69,6 +47,7 @@ int msg(const char * str, ...)
 
     return 0;
 }
+
 
 int NAND_PhyInit(void)
 {
@@ -92,6 +71,8 @@ int NAND_PhyInit(void)
 	return 0;
 
 }
+
+
 
 int NAND_PhyExit(void)
 {
@@ -172,12 +153,13 @@ int NAND_LogicInit(int boot_mode)
     ClearNandStruct();
 
 	nand_info = NandHwInit();
-	g_nand_info = nand_info;
 	if (nand_info == NULL)
 	{
 		printf("NB1 : nand phy init fail\n");
 		return ret;
 	}
+  //lisidong
+  //tick_printf(" uboot build start\n");
 
 	if((!boot_mode)&&(nand_mbr.PartCount!= 0)&&(mbr_burned_flag ==0))
 	{
@@ -207,19 +189,21 @@ int NAND_LogicInit(int boot_mode)
 			return -1;
 		}
 
-        nand_partition_num = 0;
-		for(i=0; i<nftl_num-1; i++)
+		//for(i=0; i<nftl_num-1; i++)
+		for(i=0; i<1; i++)
 		{
-		    nand_partition_num++;
 			printf(" init nftl: %d \n", i);
 			result = nftl_build_one(nand_info, i);
 		}
+
 	}
 	else
 	{
 		result = nftl_build_all(nand_info);
-		nand_partition_num = get_phy_partition_num(nand_info);
 	}
+
+
+  //tick_printf(" uboot build end\n");
 
 	if(result != 0)
 	{
@@ -232,50 +216,18 @@ int NAND_LogicInit(int boot_mode)
 }
 #endif
 
+
+
 int NAND_LogicExit(void)
 {
 	printf("NB1 : NAND_LogicExit\n");
 	nftl_flush_write_cache();
 	NandHwExit();
-	g_nand_info = NULL;
+
     return 0;
 }
 
-int NAND_build_all_partition(void)
-{
-    int result,i;
-    int nftl_num;
 
-    if(g_nand_info == NULL)
-    {
-        printf("NAND_build_all_partition fail 1\n");
-        return -1;
-    }
-
-    nftl_num = get_phy_partition_num(g_nand_info);
-    if(nftl_num == nand_partition_num)
-    {
-        return 0;
-    }
-
-    if((nand_partition_num >= nftl_num) || (nand_partition_num == 0))
-    {
-        printf("NAND_build_all_partition fail 2 %d\n",nand_partition_num);
-        return -1;
-    }
-
-    for(i=nand_partition_num; i<nftl_num; i++)
-    {
-        printf(" init nftl: %d \n", i);
-        result = nftl_build_one(g_nand_info, i);
-        if(result != 0)
-        {
-            printf("NAND_build_all_partition fail 3 %d %d\n",result,i);
-            return -1;
-        }
-    }
-    return 0;
-}
 
 uint max_badblk(uint v0, uint v1)
 {
@@ -646,7 +598,7 @@ int  NAND_EraseChip(void)
 				if(oob_buf_read[0] == 0x0)
 				{
 					bad_block_flag = 1;
-					printf("find a bad block %u\n", para_read.block);
+					msg("find a bad block %u\n", para_read.block);
 					break;
 				}
 
@@ -980,8 +932,8 @@ int NAND_Uboot_Erase(int erase_flag)
 		NAND_EraseBootBlocks();
 		if (version_match_flag > 0)
 		{
-			NAND_EraseChip();
-			NAND_UpdatePhyArch();
+			NAND_EraseChip();	
+			NAND_UpdatePhyArch();		
 			nand_erased = 1;
 		}
 	}
@@ -1465,6 +1417,7 @@ error:
 
 }
 
+
 int NAND_GetParam_store(void *buffer, uint length)
 {
 	if(!flash_scaned)
@@ -1484,3 +1437,8 @@ int NAND_FlushCache(void)
 	return nftl_flush_write_cache();
 }
 
+int __NAND_UpdatePhyArch(void)
+{
+}
+int NAND_UpdatePhyArch(void)
+	__attribute__((weak, alias("__NAND_UpdatePhyArch")));

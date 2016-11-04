@@ -784,7 +784,6 @@ int FirmwareDownloadBT(IN PADAPTER Adapter, PRT_FIRMWARE_8723A pFirmware);
 s32 rtl8723a_FirmwareDownload(PADAPTER padapter);
 void rtl8723a_FirmwareSelfReset(PADAPTER padapter);
 void rtl8723a_InitializeFirmwareVars(PADAPTER padapter);
-void _8051Reset8723A(PADAPTER padapter);
 
 void rtl8723a_InitAntenna_Selection(PADAPTER padapter);
 void rtl8723a_DeinitAntenna_Selection(PADAPTER padapter);

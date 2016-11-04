@@ -142,8 +142,7 @@ typedef struct
     __disp_pwm_t            pwm[2];
     __u32                   print_level;
     __s32                   trd_parallax[2];
-    __disp_capture_screen_para_t capture_para[2];
-
+__disp_capture_screen_para_t capture_para[2];
 }__disp_dev_t;
 
 extern __disp_dev_t gdisp;

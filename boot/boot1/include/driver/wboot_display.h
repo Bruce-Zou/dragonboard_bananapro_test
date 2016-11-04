@@ -289,6 +289,16 @@ typedef enum
 
 typedef enum//only for debug!!!
 {
+    DISP_OUT_CSC_TYPE_LCD        = 1,
+    DISP_OUT_CSC_TYPE_TV         = 2,
+    DISP_OUT_CSC_TYPE_HDMI_YUV   = 3,
+    DISP_OUT_CSC_TYPE_VGA        = 4,
+    DISP_OUT_CSC_TYPE_HDMI_RGB   = 5,
+    DISP_OUT_CSC_TYPE_LCD_DRC    = 6
+}__disp_out_csc_type_t;
+
+typedef enum//only for debug!!!
+{
     DISP_REG_SCALER0 = 0,
     DISP_REG_SCALER1 = 1,
     DISP_REG_IMAGE0 = 2,
@@ -508,6 +518,7 @@ typedef struct
     __s32 (*hdmi_set_mode)(__disp_tv_mode_t mode);
     __s32 (*hdmi_mode_support)(__disp_tv_mode_t mode);
     __s32 (*hdmi_get_HPD_status)(void);
+    __s32 (*hdmi_get_input_csc)(void);
     __s32 (*hdmi_set_pll)(__u32 pll, __u32 clk);
 }__disp_hdmi_func;
 

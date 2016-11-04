@@ -49,7 +49,7 @@ static const struct snd_pcm_hardware sun7i_pcm_hardware = {
 	.buffer_bytes_max	= 128*1024,  //1024*1024  /* value must be (2^n)Kbyte size */
 	.period_bytes_min	= 1024*4,//1024*4,
 	.period_bytes_max	= 1024*32,//1024*128,
-	.periods_min		= 4,//8,
+	.periods_min		= 1,//8,
 	.periods_max		= 8,//8,
 	.fifo_size		= 32,//32,
 };
@@ -110,6 +110,16 @@ static void sun7i_audio_buffdone(dma_hdl_t dma_hdl, void *parg)
 	spin_unlock(&prtd->lock);
 }
 
+static void sun7i_audio_conti_halfdone(dma_hdl_t dma_hdl, void *parg)
+{
+	struct sun7i_runtime_data *prtd;
+	struct snd_pcm_substream *substream = parg;
+	prtd = substream->runtime->private_data;
+	if (substream) {
+		snd_pcm_period_elapsed(substream);
+	}
+}
+
 static int sun7i_pcm_hw_params(struct snd_pcm_substream *substream,
 	struct snd_pcm_hw_params *params)
 {
@@ -138,13 +148,31 @@ static int sun7i_pcm_hw_params(struct snd_pcm_substream *substream,
 	* set callback
 	*/
 	memset(&prtd->play_done_cb, 0, sizeof(prtd->play_done_cb));
-	prtd->play_done_cb.func = sun7i_audio_buffdone;
-	prtd->play_done_cb.parg = substream;
-	/*use the full buffer callback, maybe we should use the half buffer callback?*/
-	if (0 != sw_dma_ctl(prtd->dma_hdl, DMA_OP_SET_FD_CB, (void *)&(prtd->play_done_cb))) {
-		printk(KERN_ERR "failed to set dma buffer done!!!\n");
-		sw_dma_release(prtd->dma_hdl);
-		return -EINVAL;
+	if (params_channels(params) == 4) {
+		prtd->play_done_cb.func = sun7i_audio_conti_halfdone;
+		prtd->play_done_cb.parg = substream;
+		printk("%s, line:%d\n", __func__, __LINE__);
+		/*use the full buffer callback, maybe we should use the half buffer callback?*/
+		if (0 != sw_dma_ctl(prtd->dma_hdl, DMA_OP_SET_FD_CB, (void *)&(prtd->play_done_cb))) {
+			printk(KERN_ERR "failed to set dma buffer done!!!\n");
+			sw_dma_release(prtd->dma_hdl);
+			return -EINVAL;
+		}
+		if (0 != sw_dma_ctl(prtd->dma_hdl, DMA_OP_SET_HD_CB, (void *)&(prtd->play_done_cb))) {
+			printk(KERN_ERR "failed to set dma buffer done!!!\n");
+			sw_dma_release(prtd->dma_hdl);
+			return -EINVAL;
+		}
+	} else {
+		prtd->play_done_cb.func = sun7i_audio_buffdone;
+		prtd->play_done_cb.parg = substream;
+printk("%s, line:%d\n", __func__, __LINE__);
+		/*use the full buffer callback, maybe we should use the half buffer callback?*/
+		if (0 != sw_dma_ctl(prtd->dma_hdl, DMA_OP_SET_FD_CB, (void *)&(prtd->play_done_cb))) {
+			printk(KERN_ERR "failed to set dma buffer done!!!\n");
+			sw_dma_release(prtd->dma_hdl);
+			return -EINVAL;
+		}
 	}
 
 	snd_pcm_set_runtime_buffer(substream, &substream->dma_buffer);
@@ -153,7 +181,11 @@ static int sun7i_pcm_hw_params(struct snd_pcm_substream *substream,
 
 	spin_lock_irq(&prtd->lock);
 	prtd->dma_loaded = 0;
-	prtd->dma_limit = runtime->hw.periods_min;
+	if (params_channels(params) == 4) {
+		prtd->dma_limit = 1;
+	} else {
+		prtd->dma_limit = 4;//runtime->hw.periods_min;
+	}
 	prtd->dma_period = params_period_bytes(params);
 	prtd->dma_start = runtime->dma_addr;
 	prtd->dma_pos = prtd->dma_start;
@@ -207,8 +239,18 @@ static int sun7i_pcm_prepare(struct snd_pcm_substream *substream)
 		spdif_dma_conf.xfer_type.dst_bst_len = DATA_BRST_4;
 		spdif_dma_conf.address_type.src_addr_mode = NDMA_ADDR_INCREMENT;
 		spdif_dma_conf.address_type.dst_addr_mode = NDMA_ADDR_NOCHANGE;
+		if (substream->runtime->channels== 4) {
+			printk("%s, line:%d\n", __func__, __LINE__);
+			spdif_dma_conf.bconti_mode = true;
+			spdif_dma_conf.irq_spt = CHAN_IRQ_FD|CHAN_IRQ_HD;
+			strcpy(substream->pcm->card->id, "sndspdifraw");
+			printk("%s, line:%d, substream->pcm->card->id:%s\n", __func__, __LINE__, substream->pcm->card->id);
+		} else {
+			printk("%s, line:%d\n", __func__, __LINE__);
 		spdif_dma_conf.bconti_mode = false;
 		spdif_dma_conf.irq_spt = CHAN_IRQ_FD;
+		strcpy(substream->pcm->card->id, "sndspdif");
+		}
 		spdif_dma_conf.src_drq_type = N_SRC_SDRAM;
 		spdif_dma_conf.dst_drq_type = N_DST_SPDIF_TX;//DRQDST_SPDIFTX;
 
@@ -240,7 +282,7 @@ static int sun7i_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 	case SNDRV_PCM_TRIGGER_START:
 	case SNDRV_PCM_TRIGGER_RESUME:
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:	
-		
+		printk("%s, line:%d\n", __func__, __LINE__);
 	    /*
 		* start dma transfer
 		*/
@@ -248,12 +290,13 @@ static int sun7i_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 			printk("%s err, dma start err\n", __FUNCTION__);
 			return -EINVAL;
 		}
+		printk("spdif:start\n");
 		break;
 		
 	case SNDRV_PCM_TRIGGER_SUSPEND:
 	case SNDRV_PCM_TRIGGER_STOP:
 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
-		
+		printk("%s, line:%d\n", __func__, __LINE__);
 		/*
 		* stop play dma transfer
 		*/
@@ -261,6 +304,8 @@ static int sun7i_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 			printk("%s err, dma stop err\n", __FUNCTION__);
 			return -EINVAL;
 		}
+		strcpy(substream->pcm->card->id, "sndspdif");
+		printk("%s, line:%d\n", __func__, __LINE__);
 		break;
 
 	default:

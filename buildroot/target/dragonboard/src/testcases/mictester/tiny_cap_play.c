@@ -27,7 +27,7 @@
 
 #include "include/tinyalsa/asoundlib.h"
 
-#include <time.h> 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -35,8 +35,6 @@
 #include <pthread.h>
 #include "dragonboard_inc.h"
 #include "drv_display_sun4i.h"
-
-#define random(x) (rand()%x) 
 
 #define ID_RIFF 0x46464952
 #define ID_WAVE 0x45564157
@@ -298,33 +296,20 @@ static int sound_play_stop;
 #define BUF_LEN   4096
 char *buf[BUF_LEN];
 
-
 static void *music_play(void *args)
 {
     char path[256];
     int samplerate;
     int err;
-    snd_pcm_t *playback_handle, *playback_handle1;
-    snd_pcm_hw_params_t *hw_params, *hw_params1;
+    snd_pcm_t *playback_handle;
+    snd_pcm_hw_params_t *hw_params;
     FILE *fp;
     
     db_msg("mictester:prepare play sound...\n");
-    /*
     if (script_fetch("mic", "music_file", (int *)path, sizeof(path) / 4)) {
         db_warn("mictester:unknown sound file, use default\n");
         strcpy(path, "/dragonboard/data/test48000.pcm");
-    }*/
-    int Num = 0;
-    srand((unsigned int)time(NULL));  
-    Num = random(3);
-    printf("Num=%d-------------------------------------------------------------------------   ", Num);  
-    if(Num == 0)
-        strcpy(path, "/dragonboard/data/test48000.pcm");
-    else if(Num == 1)
-        strcpy(path, "/dragonboard/data/test48000a.pcm");    
-    else if(Num == 2)
-        strcpy(path, "/dragonboard/data/test48000b.pcm");
-
+    }
     if (script_fetch("mic", "samplerate", &samplerate, 1)) {
         db_warn("mictester:unknown samplerate, use default #48000\n");
         samplerate = 48000;
@@ -529,8 +514,8 @@ unsigned int cap_play_sample(unsigned int device,
     {
         play_pcm = pcm_open(0, device, PCM_OUT, &play_config);//open audio codec
     }
-
     
+     
     if (!cap_pcm || !pcm_is_ready(cap_pcm) || !play_pcm || !pcm_is_ready(play_pcm)) {
         fprintf(stderr, "Unable to open PCM device (%s)\n",
                 pcm_get_error(cap_pcm));
@@ -554,12 +539,11 @@ unsigned int cap_play_sample(unsigned int device,
     	ret = pcm_read(cap_pcm, buffer, size);
         loopcount++;
     	//printf("Letf channel=%d;Right channel=%d\n",*((short*)buffer),*((short*)(buffer+2)));
-    	if (ret == 0) { 
+    	if (ret == 0) {       
     		if (pcm_write(play_pcm, buffer, size)) {
     		    fprintf(stderr, "Error playing sample\n");
                 break;
     		}
-
           
             if (loopcount<2) continue;
             loopcount=0;

@@ -55,6 +55,22 @@ __s32 hdmi_core_initial(void)
 	return 0;
 }
 
+extern __s32 hdmi_core_video_en(__u32 enable)
+{
+    if(enable == 1)
+    {
+        HDMI_WUINT32(0x010,HDMI_RUINT32(0x010) | 0x80000000);
+    }
+    else
+    {
+        HDMI_WUINT32(0x010,HDMI_RUINT32(0x010) & 0x7fffffff);
+    }
+
+    return 0;
+}
+
+EXPORT_SYMBOL(hdmi_core_video_en);
+
 __s32 main_Hpd_Check(void)
 {
 	__s32 i,times;
@@ -95,7 +111,7 @@ __s32 hdmi_main_task_loop(void)
         {
     	        case HDMI_State_Idle:
     		        hdmi_state = 	HDMI_State_Wait_Hpd;
-    		        return 0; 
+    		        //return 0; 
     		 
     	        case HDMI_State_Wait_Hpd:
     		        if(HPD)

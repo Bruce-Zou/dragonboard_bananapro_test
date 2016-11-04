@@ -1311,79 +1311,6 @@ __u32 USBC_Dev_IsWriteDataReady(__hdle hUSB, __u32 ep_type)
 	return 0;
 }
 
-/*
-***********************************************************************************
-*                     USBC_Dev_IsoUpdateEnable
-*
-* Description:
-*    配置device的传输类型和速度模式
-*
-* Arguments:
-*    hUSB       :  input.  USBC_open_otg获得的句柄, 记录了USBC所需要的一些关键数据
-*
-* Returns:
-*
-*
-* note:
-*    无
-*
-***********************************************************************************
-*/
-__s32 USBC_Dev_IsoUpdateEnable(__hdle hUSB)
-{
-    __usbc_otg_t *usbc_otg = (__usbc_otg_t *)hUSB;
-
-	if(usbc_otg == NULL){
-		return -1;
-	}
-
-    __USBC_Dev_TsType_Iso(usbc_otg->base_addr);
-
-    return 0;
-}
-
-static void __USBC_Dev_ep0_FlushFifo(__u32 usbc_base_addr)
-{
-    USBC_Writew(1 << USBC_BP_CSR0_D_FLUSH_FIFO, USBC_REG_CSR0(usbc_base_addr));
-}
-
-static void __USBC_Dev_Tx_FlushFifo(__u32 usbc_base_addr)
-{
-    USBC_Writew((1 << USBC_BP_TXCSR_D_CLEAR_DATA_TOGGLE) | (1 << USBC_BP_TXCSR_D_FLUSH_FIFO),
-                USBC_REG_TXCSR(usbc_base_addr));
-}
-
-static void __USBC_Dev_Rx_FlushFifo(__u32 usbc_base_addr)
-{
-    USBC_Writew((1 << USBC_BP_RXCSR_D_CLEAR_DATA_TOGGLE) | (1 << USBC_BP_RXCSR_D_FLUSH_FIFO),
-                USBC_REG_RXCSR(usbc_base_addr));
-}
-
-void USBC_Dev_FlushFifo(__hdle hUSB, __u32 ep_type)
-{
-    __usbc_otg_t *usbc_otg = (__usbc_otg_t *)hUSB;
-
-	if(usbc_otg == NULL){
-		return ;
-	}
-
-	switch(ep_type){
-		case USBC_EP_TYPE_EP0:
-			__USBC_Dev_ep0_FlushFifo(usbc_otg->base_addr);
-		break;
-
-		case USBC_EP_TYPE_TX:
-			__USBC_Dev_Tx_FlushFifo(usbc_otg->base_addr);
-		break;
-
-		case USBC_EP_TYPE_RX:
-			__USBC_Dev_Rx_FlushFifo(usbc_otg->base_addr);
-		break;
-
-		default:
-		break;
-	}
-}
 
 EXPORT_SYMBOL(USBC_Dev_SetAddress_default);
 EXPORT_SYMBOL(USBC_Dev_SetAddress);
@@ -1410,5 +1337,4 @@ EXPORT_SYMBOL(USBC_Dev_IsWriteDataReady);
 EXPORT_SYMBOL(USBC_Dev_WriteDataStatus);
 EXPORT_SYMBOL(USBC_Dev_ReadDataStatus);
 
-EXPORT_SYMBOL(USBC_Dev_IsoUpdateEnable);
-EXPORT_SYMBOL(USBC_Dev_FlushFifo);
+

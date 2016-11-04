@@ -100,8 +100,6 @@ u32 rtw_hal_power_on(_adapter *padapter)
 uint	 rtw_hal_init(_adapter *padapter) 
 {
 	uint	status = _SUCCESS;
-	struct dvobj_priv *dvobj = adapter_to_dvobj(padapter);
-	int i;
 
 #ifdef CONFIG_DUALMAC_CONCURRENT
 	if(padapter->hw_init_completed == _TRUE)
@@ -134,27 +132,20 @@ uint	 rtw_hal_init(_adapter *padapter)
 	}
 #endif
 
+	padapter->hw_init_completed=_FALSE;
+
 	status = padapter->HalFunc.hal_init(padapter);
 
 	if(status == _SUCCESS){
-		for (i = 0; i<dvobj->iface_nums; i++) {
-			padapter = dvobj->padapters[i];
-			padapter->hw_init_completed = _TRUE;
-		}
+		padapter->hw_init_completed = _TRUE;
 			
 		if (padapter->registrypriv.notch_filter == 1)
 			rtw_hal_notch_filter(padapter, 1);
 
 		rtw_hal_reset_security_engine(padapter);
-		rtw_sec_restore_wep_key(padapter);
-
-		init_hw_mlme_ext(padapter);
 	}
 	else{
-		for (i = 0; i<dvobj->iface_nums; i++) {
-			padapter = dvobj->padapters[i];
-			padapter->hw_init_completed = _FALSE;
-		}
+	 	padapter->hw_init_completed = _FALSE;
 		DBG_871X("rtw_hal_init: hal__init fail\n");
 	}
 
@@ -167,22 +158,13 @@ uint	 rtw_hal_init(_adapter *padapter)
 uint rtw_hal_deinit(_adapter *padapter)
 {
 	uint	status = _SUCCESS;
-	struct dvobj_priv *dvobj = adapter_to_dvobj(padapter);
-	int i;
-
+	
 _func_enter_;
-	if (!is_primary_adapter(padapter)){
-		DBG_871X(" rtw_hal_deinit: Secondary adapter return l\n");
-		return status;
-	}
 
 	status = padapter->HalFunc.hal_deinit(padapter);
 
 	if(status == _SUCCESS){
-		for (i = 0; i<dvobj->iface_nums; i++) {
-			padapter = dvobj->padapters[i];
-			padapter->hw_init_completed = _FALSE;
-		}
+		padapter->hw_init_completed = _FALSE;
 	}
 	else
 	{
@@ -232,11 +214,6 @@ void	rtw_hal_get_odm_var(_adapter *padapter, HAL_ODM_VARIABLE eVariable, PVOID p
 
 void rtw_hal_enable_interrupt(_adapter *padapter)
 {
-	if (!is_primary_adapter(padapter)){
-		DBG_871X(" rtw_hal_enable_interrupt: Secondary adapter return l\n");
-		return;
-	}
-	
 	if (padapter->HalFunc.enable_interrupt)
 		padapter->HalFunc.enable_interrupt(padapter);
 	else 
@@ -245,11 +222,6 @@ void rtw_hal_enable_interrupt(_adapter *padapter)
 }
 void rtw_hal_disable_interrupt(_adapter *padapter)
 {
-	if (!is_primary_adapter(padapter)){
-		DBG_871X(" rtw_hal_disable_interrupt: Secondary adapter return l\n");
-		return;
-	}
-	
 	if (padapter->HalFunc.disable_interrupt)
 		padapter->HalFunc.disable_interrupt(padapter);
 	else 
@@ -507,17 +479,15 @@ void rtw_hal_sreset_reset_value(_adapter *padapter)
 
 void rtw_hal_sreset_xmit_status_check(_adapter *padapter)
 {
-	if (!is_primary_adapter(padapter))
+#ifdef CONFIG_CONCURRENT_MODE
+	if (padapter->adapter_type != PRIMARY_ADAPTER)
 		return;
-
+#endif
 	if(padapter->HalFunc.sreset_xmit_status_check)
 		padapter->HalFunc.sreset_xmit_status_check(padapter);		
 }
 void rtw_hal_sreset_linked_status_check(_adapter *padapter)
 {
-	if (!is_primary_adapter(padapter))
-		return;
-
 	if(padapter->HalFunc.sreset_linked_status_check)
 		padapter->HalFunc.sreset_linked_status_check(padapter);	
 }

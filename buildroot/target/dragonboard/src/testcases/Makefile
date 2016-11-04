@@ -37,4 +37,3 @@ all:
 	make -C gpiotester
 	make -C csitester
 	make -C dsitester
-	make -C powerkeytester

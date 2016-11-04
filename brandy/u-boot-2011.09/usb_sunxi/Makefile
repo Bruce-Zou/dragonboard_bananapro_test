@@ -35,11 +35,8 @@ COBJS-y += usb_base_common.o
 COBJS-$(CONFIG_SUN6I) += usb_base_31.o
 COBJS-$(CONFIG_ARCH_SUN8IW3P1)   += usb_base_50.o
 COBJS-$(CONFIG_ARCH_SUN8IW3P1)   += usb_dma_control.o
-COBJS-$(CONFIG_ARCH_SUN8IW5P1)   += usb_base_67.o
-COBJS-$(CONFIG_ARCH_SUN8IW5P1)   += usb_dma_control.o
 COBJS-$(CONFIG_ARCH_SUN9IW1P1)   += usb_base_39.o
 COBJS-$(CONFIG_SUN7I) 			 += usb_base_51.o
-COBJS-$(CONFIG_SUN5I)			 += usb_base_13.o	
 
 COBJS	:= $(COBJS-y)
 SRCS	:= $(COBJS:.o=.c)

@@ -255,8 +255,7 @@ static inline int abortboot(int bootdelay)
 		gd->flags &= ~GD_FLG_SILENT;
 #endif
 
-//	return abort;
-	return 0;
+	return abort;
 }
 # endif	/* CONFIG_AUTOBOOT_KEYED */
 #endif	/* CONFIG_BOOTDELAY >= 0  */

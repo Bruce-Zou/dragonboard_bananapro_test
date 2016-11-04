@@ -40,32 +40,12 @@ typedef struct
         struct fb_info *        fbinfo[FB_MAX];
         __disp_fb_create_para_t fb_para[FB_MAX];
 	wait_queue_head_t       wait[2];
-	wait_queue_head_t       wait_frame;
 	unsigned long           wait_count[2];
-	unsigned long		    wait_frame_count;
-    	struct work_struct      resume_work[2];
-	struct timer_list       disp_timer[2];
+        struct work_struct      resume_work[2];
         //add by heyihang.Jan 28, 2013
-    	struct work_struct      vsync_work[2];
+        struct work_struct      vsync_work[2];
         ktime_t                 vsync_timestamp[2];
-	struct work_struct      commit_work;
-    __bool                  b_no_output;
-	
-	__u32                   reg_active[2];
-	
-    struct list_head        update_regs_list;
-    struct sw_sync_timeline *timeline;
-    int                     timeline_max;
-    struct mutex            update_regs_list_lock;
-    spinlock_t              update_reg_lock;
-    struct sync_fence       *acquireFence[8];
 }fb_info_t;
-
-typedef struct
-{   
-    struct list_head    list;
-    setup_dispc_data_t    hwc_data;
-}dispc_data_list_t;
 
 typedef struct
 {
@@ -96,9 +76,10 @@ long disp_ioctl(struct file *file, unsigned int cmd, unsigned long arg);
 
 __s32 disp_create_heap(__u32 pHeapHead, __u32 pHeapHeadPhy, __u32 nHeapSize);
 void *disp_malloc(__u32 num_bytes, __u32 *phy_addr);
-void  disp_free(void *virt_addr, void* phy_addr, __u32 num_bytes);
+void  disp_free(void *virt_addr, void* phy_addr);
 
-
+extern __s32 FB_set_3Dui_layer(__u32 sel, __bool en, __s32 left_off, __s32 right_off);
+extern __s32 FB_close_hw_layer(__u32 sel, __u32 mask, __bool is_close);
 extern __s32 Display_Fb_Request(__u32 fb_id, __disp_fb_create_para_t *fb_para);
 extern __s32 Display_Fb_Release(__u32 fb_id);
 extern __s32 Display_Fb_get_para(__u32 fb_id, __disp_fb_create_para_t *fb_para);
@@ -120,8 +101,5 @@ extern __s32 DRV_lcd_open(__u32 sel);
 extern __s32 DRV_lcd_close(__u32 sel);
 extern __s32 Fb_Init(__u32 from);
 extern __s32 Fb_Exit(void);
-
-extern int hwc_commit(int sel, setup_dispc_data_t *disp_data);
-
 
 #endif

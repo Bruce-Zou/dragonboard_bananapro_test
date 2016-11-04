@@ -124,7 +124,29 @@ int sw_usb_enable_hcd(__u32 usbc_no)
 }
 EXPORT_SYMBOL(sw_usb_enable_hcd);
 
+static u32 usb_suspend_disabled[3] = {0, 0, 0};
 
+int sw_usb_disable_suspend(int usbc_no, int disable)
+{
+    if(usbc_no >=0 && usbc_no <=2){
+        usb_suspend_disabled[usbc_no] = disable;
+    }else{
+        DMSG_PANIC("ERR: unkown usbc_no(%d)\n", usbc_no);
+		return -1;
+    }
 
+    return 0;
+}
+EXPORT_SYMBOL(sw_usb_disable_suspend);
 
+int sw_usb_suspend_disabled(int usbc_no)
+{
+    if(usbc_no >=0 && usbc_no <=2){
+        return usb_suspend_disabled[usbc_no];
+    }else{
+        DMSG_PANIC("ERR: unkown usbc_no(%d)\n", usbc_no);
+		return 0;
+    }
+}
+EXPORT_SYMBOL(sw_usb_suspend_disabled);
 

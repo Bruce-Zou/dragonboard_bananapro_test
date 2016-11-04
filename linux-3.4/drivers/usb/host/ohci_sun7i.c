@@ -57,6 +57,7 @@ static u32 ohci_first_probe[3] = {1, 1, 1};
 extern int usb_disabled(void);
 int sw_usb_disable_ohci(__u32 usbc_no);
 int sw_usb_enable_ohci(__u32 usbc_no);
+extern int sw_usb_suspend_disabled(int usbc_no);
 
 /*
 *******************************************************************************
@@ -568,6 +569,9 @@ static int sw_ohci_hcd_suspend(struct device *dev)
 		return 0;
 	}
 
+    if(sw_usb_suspend_disabled(sw_ohci->usbc_no))
+        return 0;
+        
  	DMSG_INFO("[%s]: sw_ohci_hcd_suspend\n", sw_ohci->hci_name);
 
 	/* Root hub was already suspended. Disable irq emission and
@@ -638,6 +642,9 @@ static int sw_ohci_hcd_resume(struct device *dev)
 		return 0;
 	}
 
+    if(sw_usb_suspend_disabled(sw_ohci->usbc_no))
+        return 0;
+        
  	DMSG_INFO("[%s]: sw_ohci_hcd_resume\n", sw_ohci->hci_name);
 
 	sw_start_ohc(sw_ohci);

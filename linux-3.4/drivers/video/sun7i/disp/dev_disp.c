@@ -3,7 +3,6 @@
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
 #include <linux/earlysuspend.h>
-#include <mach/dram-freq.h>
 #endif
 
 fb_info_t g_fbi;
@@ -71,61 +70,37 @@ static struct resource disp_resource[DISP_IO_NUM] =
 	},
 };
 
-void *disp_malloc(__u32 num_bytes, __u32 *phys_addr)
+void *disp_malloc(__u32 num_bytes, __u32 *phy_addr)
 {
-	__u32 actual_bytes;
-	void* address;
-#if 0
-	if(num_bytes != 0) {
-		actual_bytes = MY_BYTE_ALIGN(num_bytes);
-		address = dma_alloc_coherent(NULL, actual_bytes, (dma_addr_t*)phys_addr, GFP_KERNEL);
-		if(address)	{
-			__inf("dma_alloc_coherent ok, address=0x%x, size=0x%x\n", *phys_addr, num_bytes);
-			return address;
-		}
-		__wrn("dma_alloc_coherent fail, size=0x%x\n", num_bytes);
-	} else {
-		__wrn("disp_malloc size is zero\n");
-	}
-#else
-if(num_bytes != 0) {
-	actual_bytes = MY_BYTE_ALIGN(num_bytes);
-	*phys_addr = sunxi_mem_alloc(actual_bytes);
-	if(*phys_addr) {
-		//address = (void*)ioremap(*phys_addr, actual_bytes);
-		address = sunxi_map_kernel(*phys_addr, actual_bytes);
-		__inf("sunxi_mem_alloc ok, address=0x%x, size=0x%x\n", *phys_addr, num_bytes);
-		return address;
-	}
-	__wrn("sunxi_mem_alloc fail, size=0x%x\n", num_bytes);
-} else {
-	__wrn("disp_malloc size is zero\n");
+        __u32 actual_bytes;
+        __u32 address;
+        if(num_bytes != 0)
+        {
+                actual_bytes = MY_BYTE_ALIGN(num_bytes);
+                address = sunxi_mem_alloc(actual_bytes);
+                if(address)
+                {
+                        __inf("sunxi_mem_alloc ok, address=0x%x, size=0x%x\n", address, num_bytes);
+                        *phy_addr = address;
+                        return (void*)ioremap_nocache((unsigned long)address, actual_bytes);
+                }
+                __wrn("sunxi_mem_alloc fail, size=0x%x\n", num_bytes);
+        }
+        __wrn("disp_malloc size is zero\n");
+        return 0;
 }
 
-#endif
-	return 0;
-}
-
-void  disp_free(void *virt_addr, void* phys_addr, __u32 num_bytes)
+void  disp_free(void *virt_addr, void* phy_addr)
 {
-	__u32 actual_bytes;
-#if 0
-	actual_bytes = MY_BYTE_ALIGN(num_bytes);
-	if(phys_addr && virt_addr) {
-		dma_free_coherent(NULL, actual_bytes, virt_addr, (dma_addr_t)phys_addr);
-	}
-#else
-	actual_bytes = MY_BYTE_ALIGN(num_bytes);
-	if(virt_addr) {
-		//iounmap((void*)virt_addr);
-		sunxi_unmap_kernel(virt_addr);
-	}
-	if(phys_addr ) {
-		sunxi_mem_free((unsigned int)phys_addr, actual_bytes);
-	}
-#endif
-
-	return ;
+        if(virt_addr)
+        {
+                iounmap(virt_addr); 
+        }
+        if(phy_addr)
+        {
+                sunxi_mem_free((unsigned long)phy_addr);
+        }
+        return ;
 }
 
 __s32 DRV_lcd_open(__u32 sel)
@@ -336,10 +311,8 @@ __s32 DRV_DISP_Init(void)
 
         init_waitqueue_head(&g_fbi.wait[0]);
         init_waitqueue_head(&g_fbi.wait[1]);
-        init_waitqueue_head(&g_fbi.wait_frame);
         g_fbi.wait_count[0] = 0;
         g_fbi.wait_count[1] = 0;
-	 g_fbi.wait_frame_count = 0;
         INIT_WORK(&g_fbi.resume_work[0], resume_work_0);
         INIT_WORK(&g_fbi.resume_work[1], resume_work_1);
 
@@ -425,7 +398,6 @@ int disp_mem_request(int sel,__u32 size)
 	{
                 g_disp_mm[sel].info_base = (void*)ret;
                 g_disp_mm[sel].mem_start = phy_addr;
-				g_disp_mm[sel].mem_len = size;
                 memset(g_disp_mm[sel].info_base,0,size);
                 __inf("pa=0x%08lx va=0x%p size:0x%x\n",g_disp_mm[sel].mem_start, g_disp_mm[sel].info_base, size);
 
@@ -455,8 +427,7 @@ int disp_mem_release(int sel)
 	if(g_disp_mm[sel].info_base == 0)
 		return -EINVAL;
 
-	__inf("disp_mem_release, mem_id=%d, phy_addr=0x%x\n", sel, (unsigned int)g_disp_mm[sel].mem_start);
-	disp_free((void *)g_disp_mm[sel].info_base, (void*)g_disp_mm[sel].mem_start, g_disp_mm[sel].mem_len);
+	disp_free((void *)g_disp_mm[sel].info_base, (void*)g_disp_mm[sel].mem_start);
         memset(&g_disp_mm[sel],0,sizeof(struct info_mm));
 #endif
 
@@ -551,7 +522,6 @@ static int disp_remove(struct platform_device *pdev)
 void backlight_early_suspend(struct early_suspend *h)
 {
         int i = 0;
-		g_fbi.b_no_output = 1;
 
         printk("==display early suspend enter\n");
 
@@ -636,7 +606,7 @@ void backlight_late_resume(struct early_suspend *h)
                         BSP_disp_hdmi_open(i);
                 }
         }
-		g_fbi.b_no_output = 0;
+
         suspend_status &= (~1);
         suspend_prestep = 3;
 }
@@ -650,14 +620,13 @@ static struct early_suspend backlight_early_suspend_handler =
 
 #endif
 
-static __u32 image0_reg_bak,scaler0_reg_bak;
-static __u32 image1_reg_bak,scaler1_reg_bak;
+static __u32 image0_reg_bak,scaler0_reg_bak,tve0_reg_bak;
+static __u32 image1_reg_bak,scaler1_reg_bak,tve1_reg_bak;
 
 int disp_suspend(struct platform_device *pdev, pm_message_t state)
 {
         int i = 0;
 #ifndef CONFIG_HAS_EARLYSUSPEND
-		g_fbi.b_no_output = 1;
         for(i=1; i>=0; i--)
         {
                 suspend_output_type[i] = BSP_disp_get_output_type(i);
@@ -679,7 +648,7 @@ int disp_suspend(struct platform_device *pdev, pm_message_t state)
                 }
         }
         
-        BSP_disp_tv_suspend();
+        
         BSP_disp_hdmi_suspend();
         BSP_disp_clk_off(1);
         BSP_disp_clk_off(2);
@@ -715,15 +684,17 @@ int disp_suspend(struct platform_device *pdev, pm_message_t state)
                 BSP_image_clk_open(0);
                 image0_reg_bak = (__u32)kmalloc(0xe00 - 0x800, GFP_KERNEL | __GFP_ZERO);
                 scaler0_reg_bak = (__u32)kmalloc(0xa18, GFP_KERNEL | __GFP_ZERO);
+                tve0_reg_bak = (__u32)kmalloc(0x210, GFP_KERNEL | __GFP_ZERO);
                 BSP_disp_store_image_reg(0, image0_reg_bak);
                 BSP_disp_store_scaler_reg(0, scaler0_reg_bak);
+                BSP_disp_store_tvec_reg(0, tve0_reg_bak);
 
                 image1_reg_bak = (__u32)kmalloc(0xe00 - 0x800, GFP_KERNEL | __GFP_ZERO);
                 scaler1_reg_bak = (__u32)kmalloc(0xa18, GFP_KERNEL | __GFP_ZERO);
+                tve1_reg_bak = (__u32)kmalloc(0x210, GFP_KERNEL | __GFP_ZERO);
                 BSP_disp_store_image_reg(1, image1_reg_bak);
                 BSP_disp_store_scaler_reg(1, scaler1_reg_bak);
-
-
+                BSP_disp_store_tvec_reg(1, tve1_reg_bak);
                 BSP_image_clk_close(0);
         }
         BSP_disp_hdmi_suspend();
@@ -746,16 +717,19 @@ int disp_resume(struct platform_device *pdev)
                 BSP_image_clk_open(0);
                 BSP_disp_restore_scaler_reg(0, scaler0_reg_bak);
                 BSP_disp_restore_image_reg(0, image0_reg_bak);
+                BSP_disp_restore_tvec_reg(0,tve0_reg_bak);
                 BSP_disp_restore_lcdc_reg(0);
                 kfree((void*)scaler0_reg_bak);
                 kfree((void*)image0_reg_bak);
+                kfree((void*)tve0_reg_bak);
 
                 BSP_disp_restore_scaler_reg(1, scaler1_reg_bak);
                 BSP_disp_restore_image_reg(1, image1_reg_bak);
+                BSP_disp_restore_tvec_reg(1,tve1_reg_bak);
                 BSP_disp_restore_lcdc_reg(1);
                 kfree((void*)scaler1_reg_bak);
                 kfree((void*)image1_reg_bak);
-
+                kfree((void*)tve1_reg_bak);
                 BSP_image_clk_close(0);
         }
         BSP_disp_clk_on(1);
@@ -763,7 +737,6 @@ int disp_resume(struct platform_device *pdev)
         BSP_disp_hdmi_resume();
         Disp_TVEC_Init(0);
         Disp_TVEC_Init(1);
-        BSP_disp_tv_resume();
 #ifndef CONFIG_HAS_EARLYSUSPEND
 
         pr_info("[DISP]==disp_resume call==\n");
@@ -804,7 +777,7 @@ int disp_resume(struct platform_device *pdev)
         }
 
 #endif
-    g_fbi.b_no_output = 0;
+
         suspend_status &= (~2);
         suspend_prestep = 2;
 
@@ -825,84 +798,6 @@ void disp_shutdown(struct platform_device *pdev)
                 }
         }
 }
-
-
-static int disp_dram_notify(struct notifier_block *nb, unsigned long event, void *cmd)
-{
-    int i = 0;
-    //printk("disp get a dram notify:%d\n",event);
-    if (event == DRAMFREQ_NOTIFY_PREPARE){
-#ifndef CONFIG_HAS_EARLYSUSPEND
-        for(i=1; i>=0; i--)
-        {
-                suspend_output_type[i] = BSP_disp_get_output_type(i);
-                if(suspend_output_type[i] == DISP_OUTPUT_TYPE_LCD)
-                {
-                        DRV_lcd_close(i);
-                }
-                else if(suspend_output_type[i] == DISP_OUTPUT_TYPE_TV)
-                {
-                        BSP_disp_tv_close(i);
-                }
-                else if(suspend_output_type[i] == DISP_OUTPUT_TYPE_VGA)
-                {
-                        BSP_disp_vga_close(i);
-                }
-                else if(suspend_output_type[i] == DISP_OUTPUT_TYPE_HDMI)
-                {
-                        BSP_disp_hdmi_close(i);
-                }
-        }
-        
-        BSP_disp_hdmi_suspend();
-        BSP_disp_clk_off(1);
-        BSP_disp_clk_off(2);
-        suspend_status |= 2;
-        suspend_prestep = 1;
-#endif
-	}
-    if (event == DRAMFREQ_NOTIFY_DONE){
-
-#ifndef CONFIG_HAS_EARLYSUSPEND
-        pr_info("[DISP]==disp_resume call==\n");
-        BSP_disp_clk_on(1);
-        BSP_disp_clk_on(2);
-        BSP_disp_hdmi_resume();
-        Disp_TVEC_Init(0);
-        Disp_TVEC_Init(1);
-
-        for(i=1; i>=0; i--)
-        {
-                if(suspend_output_type[i] == DISP_OUTPUT_TYPE_LCD)
-                {
-                        DRV_lcd_open(i);
-                }
-                else if(suspend_output_type[i] == DISP_OUTPUT_TYPE_TV)
-                {
-                        BSP_disp_tv_open(i);
-                }
-                else if(suspend_output_type[i] == DISP_OUTPUT_TYPE_VGA)
-                {
-                        BSP_disp_vga_open(i);
-                }
-                else if(suspend_output_type[i] == DISP_OUTPUT_TYPE_HDMI)
-                {
-                        BSP_disp_hdmi_set_mode(i,BSP_disp_hdmi_get_mode(i));
-                        BSP_disp_hdmi_open(i);
-                }
-        }
-        suspend_status &= (~2);
-        suspend_prestep = 2;
-#endif
-    }
-    return 0;
-}
-
-static struct notifier_block disp_notifier = {
-       .notifier_call = disp_dram_notify,
-};
-
-
 
 long disp_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
@@ -2021,18 +1916,7 @@ long disp_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
                 case DISP_CMD_PRINT_REG:
                         ret = BSP_disp_print_reg(1, ubuffer[0]);
                         break;
-    case DISP_CMD_HWC_COMMIT:
-       {
-          setup_dispc_data_t para;
 
-	    		if(copy_from_user(&para, (void __user *)ubuffer[1],sizeof(setup_dispc_data_t)))
-	    		{
-	    		    __wrn("copy_from_user fail\n");
-	    			return  -EFAULT;
-	    		}
-	       	ret = hwc_commit(ubuffer[0], &para);
-	        break;
-        }
                 default:
                     break;
                 }
@@ -2117,7 +2001,6 @@ int __init disp_module_init(void)
 #ifdef CONFIG_PM
 #ifdef CONFIG_HAS_EARLYSUSPEND
         register_early_suspend(&backlight_early_suspend_handler);
-        dramfreq_register_notifier(&disp_notifier);
 #endif
 #endif
         disp_attr_node_init();
@@ -2131,7 +2014,6 @@ static void __exit disp_module_exit(void)
 #ifdef CONFIG_PM
 #ifdef CONFIG_HAS_EARLYSUSPEND
         unregister_early_suspend(&backlight_early_suspend_handler);
-        dramfreq_unregister_notifier(&disp_notifier);
 #endif
 #endif
         DRV_DISP_Exit();

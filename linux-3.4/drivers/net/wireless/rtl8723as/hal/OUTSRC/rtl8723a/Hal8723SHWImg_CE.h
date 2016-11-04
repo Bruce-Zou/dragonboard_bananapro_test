@@ -14,7 +14,7 @@ extern const u8 Rtl8723SFwImgArray[Rtl8723SImgArrayLength];
 extern const u8 Rtl8723SFwBTImgArray[Rtl8723SBTImgArrayLength];
 
 #ifdef CONFIG_MP_INCLUDED
-#define Rtl8723EBTImgArrayLength 16404
+#define Rtl8723EBTImgArrayLength 15275
 extern u8 Rtl8723EFwBTImgArray[Rtl8723EBTImgArrayLength] ;
 extern const u8 Rtl8723SFwUMCBCutMPImgArray[Rtl8723SUMCBCutMPImgArrayLength];
 #endif //CONFIG_MP_INCLUDED

@@ -36,7 +36,13 @@ size = 16384
 ;------------------------------>mmcblk0p2/nanda
 [partition]
     name         = bootloader
-    size	     = 32768
+    size	     = 65536
     downloadfile = "bootloader.fex"
     user_type    = 0x8000
 
+;------------------------------>mmcblk0p5/nandb
+[partition]
+    name         = env
+    size	     = 32768
+    downloadfile = "env.fex"
+    user_type    = 0x8000

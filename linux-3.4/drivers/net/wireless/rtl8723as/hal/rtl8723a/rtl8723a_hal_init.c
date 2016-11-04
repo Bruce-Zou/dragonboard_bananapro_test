@@ -37,6 +37,22 @@ _FWDownloadEnable(
 
 	if(enable)
 	{
+		// Reset wrapper
+		tmp = rtw_read8(padapter, REG_RSV_CTRL + 1);
+		rtw_write8(padapter, REG_RSV_CTRL + 1, tmp & 0xFE);
+
+		// Reset 8051
+		tmp = rtw_read8(padapter, REG_SYS_FUNC_EN + 1);
+		rtw_write8(padapter, REG_SYS_FUNC_EN + 1, tmp & 0xFB);
+
+		// Enable wrapper
+		tmp = rtw_read8(padapter, REG_RSV_CTRL + 1);
+		rtw_write8(padapter, REG_RSV_CTRL + 1, tmp | 0x01);		
+		
+		// 8051 enable
+		tmp = rtw_read8(padapter, REG_SYS_FUNC_EN+1);
+		rtw_write8(padapter, REG_SYS_FUNC_EN+1, tmp|0x04);
+
 		// MCU firmware download enable.
 		tmp = rtw_read8(padapter, REG_MCUFWDL);
 		rtw_write8(padapter, REG_MCUFWDL, tmp|0x01);
@@ -226,29 +242,6 @@ exit:
 	return ret;
 }
 
-void _8051Reset8723A(PADAPTER padapter)
-{
-	u8 tmp;
-	
-	// Reset 8051
-	tmp = rtw_read8(padapter, REG_SYS_FUNC_EN + 1);
-	rtw_write8(padapter, REG_SYS_FUNC_EN + 1, tmp & (~BIT2));
-	
-	// Reset wrapper
-	tmp = rtw_read8(padapter, REG_RSV_CTRL + 1);
-	rtw_write8(padapter, REG_RSV_CTRL + 1, tmp & (~BIT0));
-
-	// Enable wrapper
-	tmp = rtw_read8(padapter, REG_RSV_CTRL + 1);
-	rtw_write8(padapter, REG_RSV_CTRL + 1, tmp | BIT0);		
-	
-	// 8051 enable
-	tmp = rtw_read8(padapter, REG_SYS_FUNC_EN+1);
-	rtw_write8(padapter, REG_SYS_FUNC_EN+1, tmp|BIT2);
-	
-	DBG_871X("=====> _8051Reset8723A(): 8051 reset success .\n");
-}
-
 static s32 _FWFreeToGo(PADAPTER padapter)
 {
 	u32	counter = 0;
@@ -261,7 +254,7 @@ static s32 _FWFreeToGo(PADAPTER padapter)
 	} while (counter++ < POLLING_READY_TIMEOUT_COUNT);
 
 	if (counter >= POLLING_READY_TIMEOUT_COUNT) {
-		DBG_871X("%s: chksum report fail! REG_MCUFWDL:0x%08x\n", __FUNCTION__, value32);
+		RT_TRACE(_module_hal_init_c_, _drv_err_, ("%s: chksum report fail! REG_MCUFWDL:0x%08x\n", __FUNCTION__, value32));
 		return _FAIL;
 	}
 	RT_TRACE(_module_hal_init_c_, _drv_info_, ("%s: Checksum report OK! REG_MCUFWDL:0x%08x\n", __FUNCTION__, value32));
@@ -270,8 +263,6 @@ static s32 _FWFreeToGo(PADAPTER padapter)
 	value32 |= MCUFWDL_RDY;
 	value32 &= ~WINTINI_RDY;
 	rtw_write32(padapter, REG_MCUFWDL, value32);
-
-	_8051Reset8723A(padapter);
 
 	// polling for FW ready
 	counter = 0;
@@ -284,7 +275,7 @@ static s32 _FWFreeToGo(PADAPTER padapter)
 		rtw_udelay_os(5);
 	} while (counter++ < POLLING_READY_TIMEOUT_COUNT);
 
-	DBG_871X("%s: Polling FW ready fail!! REG_MCUFWDL:0x%08x\n", __FUNCTION__, value32);
+	RT_TRACE(_module_hal_init_c_, _drv_err_, ("%s: Polling FW ready fail!! REG_MCUFWDL:0x%08x\n", __FUNCTION__, value32));
 	return _FAIL;
 }
 
@@ -999,7 +990,7 @@ void rtl8723a_InitializeFirmwareVars(PADAPTER padapter)
 	PHAL_DATA_TYPE pHalData = GET_HAL_DATA(padapter);
 
 	// Init Fw LPS related.
-	adapter_to_pwrctl(padapter)->bFwCurrentInPSMode = _FALSE;
+	padapter->pwrctrlpriv.bFwCurrentInPSMode = _FALSE;
 
 	// Init H2C counter. by tynli. 2009.12.09.
 	pHalData->LastHMEBoxNum = 0;
@@ -2853,7 +2844,7 @@ void rtl8723a_init_default_value(PADAPTER padapter)
 	// init default value
 	pHalData->fw_ractrl = _FALSE;
 	pHalData->bIQKInitialized = _FALSE;
-	if (!adapter_to_pwrctl(padapter)->bkeepfwalive)
+	if (!padapter->pwrctrlpriv.bkeepfwalive)
 		pHalData->LastHMEBoxNum = 0;
 
 	pHalData->bIQKInitialized = _FALSE;
@@ -5369,7 +5360,7 @@ _func_enter_;
 				#define RW_RELEASE_EN		BIT(18)
 				#define RXDMA_IDLE			BIT(17)
 
-				struct pwrctrl_priv *pwrpriv = adapter_to_pwrctl(padapter);
+				struct pwrctrl_priv *pwrpriv = &padapter->pwrctrlpriv;
 				u8 trycnt = 100;
 
 				// pause tx
@@ -5459,11 +5450,7 @@ _func_enter_;
 				rtw_write8(padapter, REG_NAV_UPPER, (u8)usNavUpper);
 			}
 			break;
-		case HW_VAR_H2C_MEDIA_STATUS_RPT:
-			{
-				rtl8723a_set_FwMediaStatus_cmd(padapter , (*(u16 *)val));
-			}
-			break;
+
 		case HW_VAR_BCN_VALID:
 			//BCN_VALID, BIT16 of REG_TDECTRL = BIT0 of REG_TDECTRL+2, write 1 to clear, Clear by sw
 			rtw_write8(padapter, REG_TDECTRL+2, rtw_read8(padapter, REG_TDECTRL+2) | BIT0);
@@ -5507,25 +5494,13 @@ void GetHwReg8723A(PADAPTER padapter, u8 variable, u8 *val)
 			}
 			break;
 
-		case HW_VAR_CAM_READ:
-			{
-				u32 cmd;
-				u32 *cam_val = (u32*)val;
-
-				cmd = CAM_POLLINIG | CAM_READ | cam_val[1];
-				rtw_write32(padapter, RWCAM, cmd);
-				
-				cam_val[0]=rtw_read32(padapter,  RCAMO);
-			}
-			break;
-
 		case HW_VAR_FWLPS_RF_ON:
 			{
 				// When we halt NIC, we should check if FW LPS is leave.
 				u32 valRCR;
 
 				if ((padapter->bSurpriseRemoved == _TRUE) ||
-					(adapter_to_pwrctl(padapter)->rf_pwrstate == rf_off))
+					(padapter->pwrctrlpriv.rf_pwrstate == rf_off))
 				{
 					// If it is in HW/SW Radio OFF or IPS state, we do not check Fw LPS Leave,
 					// because Fw is unload.
@@ -5576,13 +5551,7 @@ void GetHwReg8723A(PADAPTER padapter, u8 variable, u8 *val)
 			break;
 		case HW_VAR_CHK_HI_QUEUE_EMPTY:
 			*val = ((rtw_read32(padapter, REG_HGQ_INFORMATION)&0x0000ff00)==0) ? _TRUE:_FALSE;
-			break;	
-		case HW_VAR_C2HEVT_CLEAR:
-			*val =  rtw_read8(padapter, REG_C2HEVT_CLEAR);
 			break;
-		case HW_VAR_C2HEVT_MSG_NORMAL:
-			*val =  rtw_read8(padapter, REG_C2HEVT_MSG_NORMAL);
-			break;	
 	}
 }
 

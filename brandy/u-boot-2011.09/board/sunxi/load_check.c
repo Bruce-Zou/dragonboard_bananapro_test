@@ -123,16 +123,8 @@ static int board_probe_bat_status(int standby_mode)
 	int   dc_exist, bat_exist, counter;
 	int   bat_init = 0;
 	int   bat_cal = 1;
-	int   ret, chargemode = 0;
 	//当前可以确定是火牛开机，但是是否开机还不确定，需要确认电池是否存在
 	//当电池不存在即开机，电池存在则关机
-	//新添加，根据环境变量，是启动当前的待机，或者android待机功能
-	ret = script_parser_fetch("charging_type", "charging_type", &chargemode, 1);
-	if((!ret) && chargemode)
-	{
-		chargemode = 1;
-	}
-
 	counter = 4;
 	do
 	{
@@ -143,18 +135,15 @@ static int board_probe_bat_status(int standby_mode)
 		if(bat_exist == -1)
 		{
 			printf("bat is unknown\n");
-			if(!chargemode)
+			if(!bat_init)
 			{
-				if(!bat_init)
+				if(battery_charge_cartoon_init(0) < 0)
 				{
-					if(battery_charge_cartoon_init(0) < 0)
-					{
-						tick_printf("init charge cartoon fail\n");
+					tick_printf("init charge cartoon fail\n");
 
-						return -1;
-					}
-					bat_init = 1;
+					return -1;
 				}
+				bat_init = 1;
 			}
 			__msdelay(500);
 		}
@@ -175,21 +164,10 @@ static int board_probe_bat_status(int standby_mode)
 	if(bat_exist <= 0)
 	{
 		tick_printf("no battery exist\n");
-		if(chargemode)
-		{
-			return 0;
-		}
 		if(bat_init)
 		{
 			battery_charge_cartoon_exit();
 		}
-		return 0;
-	}
-	if(chargemode)
-	{
-		printf("use android charge mode");
-		gd->chargemode = 1;
-
 		return 0;
 	}
 	if(!bat_init)
@@ -440,15 +418,11 @@ void board_status_probe(int standby_mode)
 			return ;
 		}
 		//启动条件判断，第二阶段，检测开机原因
-		ret = board_probe_poweron_cause();		//负数，0：进入系统；正数：待机或者直接关机
+		ret = board_probe_poweron_cause();		//负数，0：进入系统；正数：待机
 		debug("stage2 resule %d\n", ret);
 		if(ret <= 0)
 		{
 			return ;
-		}
-		else if(ret == AXP_VBUS_DCIN_NOT_EXIST) //当前一次为boot standby状态，但是启动时检查无外部电源，直接关机
-		{
-			do_shutdown(NULL, 0, 1, NULL);
 		}
 	}
 	//启动条件判断，第三阶段，检测电池存在

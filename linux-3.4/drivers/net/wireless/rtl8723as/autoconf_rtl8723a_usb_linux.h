@@ -116,7 +116,7 @@
 #define CONFIG_LONG_DELAY_ISSUE
 #define CONFIG_NEW_SIGNAL_STAT_PROCESS
 #define RTW_NOTCH_FILTER 0 /* 0:Disable, 1:Enable,  */
-#define CONFIG_DEAUTH_BEFORE_CONNECT
+
 
 
 //#define CONFIG_ANTENNA_DIVERSITY
@@ -171,7 +171,7 @@
 #endif	// CONFIG_BR_EXT
 
 //#define CONFIG_TX_MCAST2UNI		// Support IP multicast->unicast
-//#define CONFIG_CHECK_AC_LIFETIME 	// Check packet lifetime of 4 ACs.
+
 
 #if defined(CONFIG_BT_COEXIST) || defined(CONFIG_POWER_SAVING)
 #ifndef CONFIG_USB_INTERRUPT_IN_PIPE
@@ -230,7 +230,7 @@
 
 #define CONFIG_OUT_EP_WIFI_MODE	0
 
-#define ENABLE_USB_DROP_INCORRECT_OUT
+#define ENABLE_USB_DROP_INCORRECT_OUT	0
 
 #define RTL8192CU_ASIC_VERIFICATION	0	// For ASIC verification.
 

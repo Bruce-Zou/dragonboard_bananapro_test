@@ -94,6 +94,7 @@ typedef unsigned int __hdle;
 
 #include "egon2.h"
 #include "string.h"
+#include "eGon2_driver.h"
 #include "../osal/osal_de.h"
 #include "hdmi/hdmi_hal.h"
 
@@ -124,6 +125,7 @@ typedef struct
 	__s32 (*hdmi_mode_support)(__disp_tv_mode_t mode);
 	__s32 (*hdmi_get_HPD_status)(void);
 	__s32 (*hdmi_set_pll)(__u32 pll, __u32 clk);
+    __s32 (*hmdi_get_input_csc)(void);
 	__s32 (*disp_int_process)(__u32 sel);
 }__disp_bsp_init_para;
 
@@ -161,7 +163,7 @@ extern __s32 BSP_disp_enhance_enable(__u32 sel, __bool enable);
 extern __s32 BSP_disp_get_enhance_enable(__u32 sel);
 extern __s32 BSP_disp_capture_screen(__u32 sel, __disp_capture_screen_para_t * para);
 extern __s32 BSP_disp_set_screen_size(__u32 sel, __disp_rectsz_t * size);
-extern __s32 BSP_disp_set_output_csc(__u32 sel, __disp_output_type_t type);
+extern __s32 BSP_disp_set_output_csc(__u32 sel, __disp_out_csc_type_t type);
 extern __s32 BSP_disp_de_flicker_enable(__u32 sel, __bool b_en);
 
 extern __s32 BSP_disp_layer_request(__u32 sel, __disp_layer_work_mode_t mode);

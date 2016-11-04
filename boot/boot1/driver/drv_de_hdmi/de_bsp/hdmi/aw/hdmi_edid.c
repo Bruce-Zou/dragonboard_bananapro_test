@@ -445,7 +445,7 @@ __s32 ParseEDID(void)
 				{
 						if(EDID_Buf[0x80*i+3]&0x20)
 						{
-							YCbCr444_Support = 1;
+							YCbCr444_Support = 0;
 							__inf("device support YCbCr44 output\n");
 						}
 				}

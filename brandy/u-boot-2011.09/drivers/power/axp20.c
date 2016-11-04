@@ -26,11 +26,6 @@
 #include "axp.h"
 #include <pmu.h>
 
-#define NMI_CTL_REG            (0x01c00030)
-#define NMI_IRG_PENDING_REG    (0x01c00034)
-#define NMI_INT_ENABLE_REG     (0x01c00038)
-#define writel(v, addr)	(*((volatile unsigned long  *)(addr)) = (unsigned long)(v))
-
 extern int axp20_set_supply_status(int vol_name, int vol_value, int onoff);
 extern int axp20_set_supply_status_byname(char *vol_name, int vol_value, int onoff);
 extern int axp20_probe_supply_status(int vol_name, int vol_value, int onoff);
@@ -54,7 +49,6 @@ __s32 axp20_set_power_off_vol(void);
 *
 ************************************************************************************************************
 */
-#if 0
 static __s32 axp20_clr_status(void)
 {
 	__u8  reg_addr1,value1;
@@ -145,19 +139,19 @@ static __s32 axp20_clr_status(void)
 
 	return -1;
 }
-#endif
+
 /*
 ************************************************************************************************************
 *
 *                                             function
 *
-*    oˉêy??3?￡o
+*    函数名称：
 *
-*    2?êyáD±í￡o
+*    参数列表：
 *
-*    ·μ???μ  ￡o
+*    返回值  ：
 *
-*    ?μ?÷    ￡o
+*    说明    ：
 *
 *
 ************************************************************************************************************
@@ -168,8 +162,7 @@ __s32 axp20_power_enable_coulomb(void)
     __u8   tmp_value;
 
 	reg_addr = BOOT_POWER20_COULOMB_CTL;
-    axp_i2c_read(AXP20_ADDR, reg_addr, &tmp_value);
-    tmp_value |= 0x80;	
+	tmp_value = 0x80;
 	if(axp_i2c_write(AXP20_ADDR, reg_addr, tmp_value))
     {
         return -1;
@@ -182,13 +175,13 @@ __s32 axp20_power_enable_coulomb(void)
 *
 *                                             function
 *
-*    oˉêy??3?￡o
+*    函数名称：
 *
-*    2?êyáD±í￡o
+*    参数列表：
 *
-*    ·μ???μ  ￡o
+*    返回值  ：
 *
-*    ?μ?÷    ￡o
+*    说明    ：
 *
 *
 ************************************************************************************************************
@@ -196,6 +189,7 @@ __s32 axp20_power_enable_coulomb(void)
 int axp20_probe(void)
 {
 	u8    pmu_type;
+	u8    reg_addr,value;
     __msdelay(100);//确保硬件ADC准备好。
 	if(axp_i2c_read(AXP20_ADDR, BOOT_POWER20_VERSION, &pmu_type))
 	{
@@ -208,6 +202,98 @@ int axp20_probe(void)
 	{
 		/* pmu type AXP209 */
 		tick_printf("PMU: AXP209\n");
+		 //为兼容新旧版本IC，取消PMU硬件检测RDC功能
+		reg_addr = BOOT_POWER20_COULOMB_CAL;
+    	axp_i2c_read(AXP20_ADDR, reg_addr, &value);
+    	value |= 0x80;//pouse ocv.
+    	axp_i2c_write(AXP20_ADDR, reg_addr, value);
+    	reg_addr = BOOT_POWER20_RDC1;
+    	axp_i2c_read(AXP20_ADDR, reg_addr, &value);
+    	value &= 0x7F;//disable rdc calculation
+    	axp_i2c_write(AXP20_ADDR, reg_addr, value);
+		reg_addr = BOOT_POWER20_COULOMB_CAL;
+    	axp_i2c_read(AXP20_ADDR, reg_addr, &value);
+    	value &= 0x7F;//start ocv
+    	axp_i2c_write(AXP20_ADDR, reg_addr, value);
+		reg_addr = BOOT_POWER20_COULOMB_CTL;
+		if(axp_i2c_read(AXP20_ADDR, reg_addr, &value))
+		{
+	    	return -1;
+		}
+		if(!(value & 0x80)) // coulomb conuter on off control
+		{
+			axp20_clr_status(); //clear the data buffer
+		}
+		axp20_power_enable_coulomb();
+
+		// open bat acin vbus voltage and current adc
+		reg_addr = BOOT_POWER20_ADC_EN1;
+	    if(axp_i2c_read(AXP20_ADDR, reg_addr, &value))
+	    {
+	        return -1;
+	    }
+	    value |= 0xfe << 0;
+	    reg_addr = BOOT_POWER20_ADC_EN1;
+	    if(axp_i2c_write(AXP20_ADDR, reg_addr, value))
+	    {
+	        return -1;
+	    }
+	    //Enable Charge
+	    reg_addr = BOOT_POWER20_CHARGE1;
+	    if(axp_i2c_read(AXP20_ADDR, reg_addr, &value))
+	    {
+	        return -1;
+	    }
+	    value |= 0x80 << 0;
+	    reg_addr = BOOT_POWER20_CHARGE1;
+	    if(axp_i2c_write(AXP20_ADDR, reg_addr, value))
+	    {
+	        return -1;
+	    }
+	    //set bus current limit off
+	    reg_addr = BOOT_POWER20_IPS_SET;
+	    if(axp_i2c_read(AXP20_ADDR, reg_addr, &value))
+	    {
+	        return -1;
+	    }
+	    value &= 0xfC;
+	    value |= 0x03;
+	    reg_addr = BOOT_POWER20_IPS_SET;
+	    if(axp_i2c_write(AXP20_ADDR, reg_addr, value))
+	    {
+	        return -1;
+	    }
+	    {
+	    	__u8 coulomb_val, tmp_val;
+	        //hold
+	        reg_addr = BOOT_POWER20_COULOMB_CAL;
+	        if(axp_i2c_read(AXP20_ADDR, reg_addr, &coulomb_val))
+	        {
+	            return -1;
+	        }
+	        coulomb_val |= 0x80;
+	        if(axp_i2c_write(AXP20_ADDR, reg_addr, coulomb_val))
+	        {
+	            return -1;
+	        }
+	        //
+	        reg_addr = 0xBA;
+	        if(axp_i2c_read(AXP20_ADDR, reg_addr, &tmp_val))
+	        {
+	            return -1;
+	        }
+	        tmp_val &= ~0x80;
+	        if(axp_i2c_write(AXP20_ADDR, reg_addr, tmp_val))
+	        {
+	            return -1;
+	        }
+	        reg_addr = BOOT_POWER20_COULOMB_CAL;
+	        coulomb_val &= ~0x80;
+	        if(axp_i2c_write(AXP20_ADDR, reg_addr, coulomb_val))
+	        {
+	            return -1;
+	        }
+	    }
 		return 0;
 	}
 
@@ -311,19 +397,24 @@ int axp20_probe_battery_exist(void)
 int axp20_probe_battery_ratio(void)
 {
 	u8 reg_value;
+	int vol_threshold=0;
+
 	#ifdef CONFIG_ARCH_HOMELET
 		return 100;
 	#endif
+	if(script_parser_fetch("target", "vol_threshold", &vol_threshold, 1))
+	{
+		vol_threshold = 3600;
+	}
+	if(vol_threshold >= axp20_probe_battery_vol())
+    {
+		return -1;
+	}
 	if(axp_i2c_read(AXP20_ADDR, BOOT_POWER20_COULOMB_CAL, &reg_value))
     {
         return -1;
     }
-	reg_value = reg_value & 0x7f;
-	if(reg_value == 127) //错误校正
-	{
-		reg_value = 100;
-	}
-	return reg_value;
+	return reg_value & 0x7f;
 }
 /*
 ************************************************************************************************************
@@ -389,7 +480,7 @@ int axp20_probe_battery_vol(void)
 
 	battery_vol = (value << 4);
     reg_addr = BOOT_POWER20_BAT_AVERVOL_L4;
-    if(axp_i2c_read(AXP20_ADDR, reg_addr, &value))
+    if(axp_i2c_write(AXP20_ADDR, reg_addr, value))
     {
         return -1;
     }
@@ -563,15 +654,15 @@ int axp20_set_power_off(void)
 */
 int axp20_set_power_onoff_vol(int set_vol, int stage)
 {
-	//tage?a0￡?éè??1??ú??oó￡?PMUó2?t??′??a?úμ??1?a3.3V
-	//stage·?0￡?éè???a?ú??oó￡?PMUó2?t1??úμ??1?a2.9V
+	//tage为0，设置关机之后，PMU硬件下次开机电压为3.3V
+	//stage非0，设置开机之后，PMU硬件关机电压为2.9V
     //u8  reg_addr;
     //u8  reg_value;
     //s32 vol_value, ret;	
 
 	if(!set_vol)
 	{
-		if(!stage)//stage?a0
+		if(!stage)//stage为0
 		{
 			//set_vol = 3300;	
 			axp20_set_power_off_vol();
@@ -781,16 +872,15 @@ int axp20_probe_int_pending(uchar *addr)
         {
             return -1;
         }
-    //}
+    }
 
-    //for(i=0;i<5;i++)
-    //{
-        if(axp_i2c_write(AXP20_ADDR, BOOT_POWER20_INTSTS1 + i, addr[i]))
+    for(i=0;i<5;i++)
+    {
+        if(axp_i2c_write(AXP20_ADDR, BOOT_POWER20_INTSTS1 + i, 0xff))
         {
             return -1;
         }
     }
-	writel(0x01,NMI_IRG_PENDING_REG);
     return 0;
 }
 /*
@@ -864,8 +954,8 @@ int axp20_config_charge_current(int start_time)
 	script_gpio_set_t  gpio;
 	//__u32  gpio_hd;
 
-	//1 ′ú±í1??ú×′ì?
-	//0 ′ú±í?a?ú×′ì?
+	//1 代表关机状态
+	//0 代表开机状态
 	if(start_time == 1)
 	{
 		ret = script_parser_fetch("pmu_para", "pmu_used2", &value, 1);
@@ -910,7 +1000,7 @@ int axp20_config_charge_current(int start_time)
 	return -1;
 }
 
-__s32 axp20_set_power_on_vol(void) //éè???a?ú??oó￡?PMUó2?t1??úμ??1?a2.9V
+__s32 axp20_set_power_on_vol(void) //设置开机之后，PMU硬件关机电压为2.9V
 {
 	__u8  reg_addr;
 	__u8  reg_value;
@@ -951,7 +1041,7 @@ __s32 axp20_set_power_on_vol(void) //éè???a?ú??oó￡?PMUó2?t1??úμ??1?a2.9V
 	return -1;
 }
 
-__s32 axp20_set_power_off_vol(void) //éè??1??ú??oó￡?PMUó2?t??′??a?úμ??1?a3.3V
+__s32 axp20_set_power_off_vol(void) //设置关机之后，PMU硬件下次开机电压为3.3V
 {
 	__u8  reg_addr;
 	__u8  reg_value;
@@ -986,9 +1076,9 @@ __s32 axp20_set_power_off_vol(void) //éè??1??ú??oó￡?PMUó2?t??′??a?úμ??1
 		}
 		else
 		{
-			//éè??VBUS2??Tá÷
+			//设置VBUS不限流
 			//eGon2_power_vbus_cur_limit();
-			//éè??íê3é￡?í?ê±1??ú
+			//设置完成，同时关机
 	    	reg_addr = BOOT_POWER20_OFF_CTL;
 	    	if(axp_i2c_read(AXP20_ADDR, reg_addr, &reg_value))
 	    	{

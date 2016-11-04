@@ -4,135 +4,6 @@
 #include "disp_de.h"
 #include "disp_lcd.h"
 #include "disp_clk.h"
-#include <linux/switch.h>
-
-__u32 tve_hpd = 0;
-static __bool b_tve_suspend = 0;
-static struct task_struct * tve_task;
-struct work_struct tve_hpd_work;
-
-static struct switch_dev cvbs_switch_dev = {
-    .name = "cvbs",
-};
-
-static struct switch_dev svideo_switch_dev = {
-    .name = "svideo",
-};
-
-static struct switch_dev ypbpr_switch_dev = {
-    .name = "ypbpr",
-};
-
-static struct switch_dev vga_switch_dev = {
-    .name = "vga",
-};
-
-__s32 BSP_disp_tv_get_interface(__u32 sel);
-
-void tve_report_hpd_work(struct work_struct *work)
-{
-    switch(tve_hpd)
-    {
-        case DISP_TV_NONE:
-        {
-            switch_set_state(&cvbs_switch_dev, 0);
-            switch_set_state(&svideo_switch_dev, 0);
-            switch_set_state(&ypbpr_switch_dev, 0);
-            switch_set_state(&vga_switch_dev, 0);
-            __inf("tve switch_set_state 0\n");
-            break;
-        }
-        case DISP_TV_CVBS:
-        {
-            switch_set_state(&cvbs_switch_dev, 1);
-            __inf("cvbs switch_set_state 1\n");
-            break;
-        }
-        case DISP_TV_SVIDEO:
-        {
-            switch_set_state(&svideo_switch_dev, 1);
-            __inf("svideo switch_set_state 1\n");
-            break;
-        }
-        case DISP_TV_YPBPR:
-        {
-            switch_set_state(&ypbpr_switch_dev, 1);
-            __inf("ypbpr switch_set_state 1\n");
-            break;
-        }
-        case 8:
-        {
-            switch_set_state(&vga_switch_dev, 1);
-            __inf("vga switch_set_state 1\n");
-            break;
-        }
-        default:
-        {
-            switch_set_state(&cvbs_switch_dev, 0);
-            switch_set_state(&svideo_switch_dev, 0);
-            switch_set_state(&ypbpr_switch_dev, 0);
-            switch_set_state(&vga_switch_dev, 0);
-            break;
-        }
-    }
-}
-
-int TVE_detect_thread(void *parg)
-{
-    __u32 hpd;
-    while(1)
-    {
-        if(!b_tve_suspend)
-        {
-            hpd = BSP_disp_tv_get_interface(0);
-            if(hpd != tve_hpd)
-            {
-                set_current_state(TASK_INTERRUPTIBLE);
-                schedule_timeout(80);
-                hpd = BSP_disp_tv_get_interface(0);
-                if(hpd != tve_hpd)
-                {
-                    tve_hpd = hpd;
-                    schedule_work(&tve_hpd_work);
-                }
-            }
-        }
-        set_current_state(TASK_INTERRUPTIBLE);
-        schedule_timeout(200);
-    }
-    return 0;
-}
-
-__s32 TVE_detect_init(void)
-{
-    INIT_WORK(&tve_hpd_work, tve_report_hpd_work);
-    switch_dev_register(&cvbs_switch_dev);
-    switch_dev_register(&ypbpr_switch_dev);
-    switch_dev_register(&svideo_switch_dev);
-    switch_dev_register(&vga_switch_dev);
-
-    tve_task = kthread_create(TVE_detect_thread, (void*)0, "tve detect");
-    if(IS_ERR(tve_task))
-    {
-        __s32 err = 0;
-        __wrn("Unable to start kernel thread %s.\n","tve detect");
-        err = PTR_ERR(tve_task);
-        tve_task = NULL;
-        return err;
-    }
-    wake_up_process(tve_task);
-    return 0;
-}
-
-__s32 TVE_detect_exit(void)
-{
-    if(tve_task)
-    {
-        kthread_stop(tve_task);
-        tve_task = 0;
-    }
-    return 0;
-}
 
 __s32 Disp_Switch_Dram_Mode(__u32 type, __u8 tv_mod)
 {
@@ -224,13 +95,13 @@ static void Disp_TVEC_DacCfg(__u32 sel, __u8 mode)
 	TVE_dac_disable(sel, 1);
 	TVE_dac_disable(sel, 2);
 	TVE_dac_disable(sel, 3);
-
+    
 	switch(mode)
 	{
-    	case DISP_TV_MOD_NTSC:
-    	case DISP_TV_MOD_PAL:
-    	case DISP_TV_MOD_PAL_M:
-    	case DISP_TV_MOD_PAL_NC:
+	case DISP_TV_MOD_NTSC:
+	case DISP_TV_MOD_PAL:
+	case DISP_TV_MOD_PAL_M:
+	case DISP_TV_MOD_PAL_NC:
     	{
     	    for(i=0; i<4; i++)
     	    {
@@ -244,10 +115,10 @@ static void Disp_TVEC_DacCfg(__u32 sel, __u8 mode)
     	}
 	    break;
 
-    	case DISP_TV_MOD_NTSC_SVIDEO:
-    	case DISP_TV_MOD_PAL_SVIDEO:
-    	case DISP_TV_MOD_PAL_M_SVIDEO:
-    	case DISP_TV_MOD_PAL_NC_SVIDEO:
+	case DISP_TV_MOD_NTSC_SVIDEO:
+	case DISP_TV_MOD_PAL_SVIDEO:
+	case DISP_TV_MOD_PAL_M_SVIDEO:
+	case DISP_TV_MOD_PAL_NC_SVIDEO:
 		{
 		    for(i=0; i<4; i++)
 		    {
@@ -266,17 +137,17 @@ static void Disp_TVEC_DacCfg(__u32 sel, __u8 mode)
 		    }
 		}
 		break;
-
-    	case DISP_TV_MOD_480I:
-    	case DISP_TV_MOD_576I:
-    	case DISP_TV_MOD_480P:
-    	case DISP_TV_MOD_576P:
-    	case DISP_TV_MOD_720P_50HZ:
-    	case DISP_TV_MOD_720P_60HZ:
-    	case DISP_TV_MOD_1080I_50HZ:
-    	case DISP_TV_MOD_1080I_60HZ:
-    	case DISP_TV_MOD_1080P_50HZ:
-    	case DISP_TV_MOD_1080P_60HZ:
+    					
+	case DISP_TV_MOD_480I:
+	case DISP_TV_MOD_576I:
+	case DISP_TV_MOD_480P:
+	case DISP_TV_MOD_576P:
+	case DISP_TV_MOD_720P_50HZ:
+	case DISP_TV_MOD_720P_60HZ:
+	case DISP_TV_MOD_1080I_50HZ:
+	case DISP_TV_MOD_1080I_60HZ:
+	case DISP_TV_MOD_1080P_50HZ:
+	case DISP_TV_MOD_1080P_60HZ:
         {
     	    for(i=0; i<4; i++)
     	    {
@@ -307,8 +178,8 @@ static void Disp_TVEC_DacCfg(__u32 sel, __u8 mode)
     	}
     	break;
 
-	    default:
-		    break;           
+	default:
+		break;           
 	}
 }
 
@@ -546,15 +417,60 @@ __s32 BSP_disp_tv_set_src(__u32 sel, __disp_lcdc_src_t src)
     return DIS_SUCCESS;
 }
 
-__s32 BSP_disp_tv_suspend(void)
+__s32 BSP_disp_store_tvec_reg(__u32 sel, __u32 addr)
 {
-    b_tve_suspend = 1;
-    return 0;
+        __u32 i = 0;
+        __u32 value = 0;
+        __u32 reg_base = 0;
+
+        if(sel == 0)
+        {
+                reg_base = gdisp.init_para.base_tvec0;
+        }
+        else
+        {
+                reg_base = gdisp.init_para.base_tvec1;
+        }
+
+        for(i=0; i<0x210; i+=4)
+        {
+                value = sys_get_wvalue(reg_base + i);
+                sys_put_wvalue(addr + i, value);
+        }
+
+        return 0;
 }
 
-__s32 BSP_disp_tv_resume(void)
-{
-    b_tve_suspend = 0;
-    return 0;
-}
 
+__s32 BSP_disp_restore_tvec_reg(__u32 sel ,__u32 addr)
+{
+        __u32 i = 0;
+        __u32 value = 0;
+        __u32 reg_base = 0;
+
+        if(sel == 0)
+        {
+                reg_base = gdisp.init_para.base_tvec0;
+        }
+        else
+        {
+                reg_base = gdisp.init_para.base_tvec1;
+        }
+
+        for(i=8; i<0x210; i+=4)
+        {
+                value = sys_get_wvalue(addr + i);
+                sys_put_wvalue(reg_base + i,value);
+        }
+
+        value = sys_get_wvalue(addr);
+        sys_put_wvalue(reg_base,value);
+
+        value = sys_get_wvalue(addr + 4);
+        sys_put_wvalue(reg_base + 4,value);
+
+        value = sys_get_wvalue(addr + 24);
+        sys_put_wvalue(reg_base + 24, value);
+
+        return 0;
+}

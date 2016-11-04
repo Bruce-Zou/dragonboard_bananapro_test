@@ -692,8 +692,6 @@ __u32 USBC_Dev_IsWriteDataReady(__hdle hUSB, __u32 ep_type);
 __s32 USBC_Dev_WriteDataStatus(__hdle hUSB, __u32 ep_type, __u32 complete);
 __s32 USBC_Dev_ReadDataStatus(__hdle hUSB, __u32 ep_type, __u32 complete);
 
-__s32 USBC_Dev_IsoUpdateEnable(__hdle hUSB);
-void USBC_Dev_FlushFifo(__hdle hUSB, __u32 ep_type);
 
 //-----------------------------------------------------------------------
 //   USB 公共操作部分

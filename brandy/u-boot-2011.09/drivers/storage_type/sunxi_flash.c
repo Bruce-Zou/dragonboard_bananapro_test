@@ -29,7 +29,10 @@
 #include "sys_config.h"
 #include "sys_partition.h"
 
+
 int sunxi_flash_init_uboot(int verbose);
+
+
 /*
 ************************************************************************************************************
 *
@@ -247,12 +250,12 @@ sunxi_flash_mmc_exit(int force){
 
 int sunxi_flash_mmc_phyread(unsigned int start_block, unsigned int nblock, void *buffer)
 {
-	return mmc_boot->block_dev.block_read_mass_pro(mmc_boot->block_dev.dev, start_block, nblock, buffer);
+	return mmc_boot->block_dev.block_read(mmc_boot->block_dev.dev, start_block, nblock, buffer);
 }
 
 int sunxi_flash_mmc_phywrite(unsigned int start_block, unsigned int nblock, void *buffer)
 {
-	return mmc_boot->block_dev.block_write_mass_pro(mmc_boot->block_dev.dev, start_block, nblock, buffer);
+	return mmc_boot->block_dev.block_write(mmc_boot->block_dev.dev, start_block, nblock, buffer);
 }
 /*
 ************************************************************************************************************
@@ -310,12 +313,12 @@ sunxi_sprite_mmc_exit(int force){
 
 int sunxi_sprite_mmc_phyread(unsigned int start_block, unsigned int nblock, void *buffer)
 {
-	return mmc_sprite->block_dev.block_read_mass_pro(mmc_sprite->block_dev.dev, start_block, nblock, buffer);
+	return mmc_sprite->block_dev.block_read(mmc_sprite->block_dev.dev, start_block, nblock, buffer);
 }
 
 int sunxi_sprite_mmc_phywrite(unsigned int start_block, unsigned int nblock, void *buffer)
 {
-	return mmc_sprite->block_dev.block_write_mass_pro(mmc_sprite->block_dev.dev, start_block, nblock, buffer);
+	return mmc_sprite->block_dev.block_write(mmc_sprite->block_dev.dev, start_block, nblock, buffer);
 }
 /*
 ************************************************************************************************************
@@ -453,7 +456,7 @@ int sunxi_flash_handle_init(void)
 
 	if(workmode == WORK_MODE_BOOT)
 	{
-	    int nand_used, sdc0_used, sdc2_used;
+	    int nand_used, sdc_used;
 
 		storage_type = uboot_spare_head.boot_data.storage_type;
 		debug("storage type = %d\n", storage_type);
@@ -462,22 +465,10 @@ int sunxi_flash_handle_init(void)
 		    if(2 == storage_type)
 			{
 			    nand_used = 0;
-			    sdc2_used = 1;
-
+			    sdc_used  = 1;
 				script_parser_patch("nand0_para", "nand0_used", &nand_used, 1);
 		        script_parser_patch("nand1_para", "nand1_used", &nand_used, 1);
-		        script_parser_patch("mmc2_para",  "sdc_used",   &sdc2_used, 1);
-			}
-			else
-			{
-				//nand_used  = 0;
-			    sdc0_used  = 1;
-			    //sdc2_used  = 0;
-
-				//script_parser_patch("nand0_para", "nand0_used", &nand_used, 1);
-		        //script_parser_patch("nand1_para", "nand1_used", &nand_used, 1);
-		        script_parser_patch("mmc0_para",  "sdc_used",   &sdc0_used, 1);
-		        //script_parser_patch("mmc2_para",  "sdc_used",   &sdc2_used, 1);
+		        script_parser_patch("mmc2_para", "sdc_used", &sdc_used, 1);
 			}
 			card_no = (storage_type == 1)?0:2;
 			printf("MMC:	 %d\n", card_no);
@@ -510,10 +501,10 @@ int sunxi_flash_handle_init(void)
 		else
 		{
 		    nand_used = 1;
-			sdc2_used  = 0;
+			sdc_used  = 0;
             script_parser_patch("nand0_para", "nand0_used", &nand_used, 1);
 		    script_parser_patch("nand1_para", "nand1_used", &nand_used, 1);
-		    script_parser_patch("mmc2_para",  "sdc_used",   &sdc2_used, 1);
+		    script_parser_patch("mmc2_para", "sdc_used", &sdc_used, 1);
 
 		    tick_printf("NAND: ");
 		    if(nand_uboot_init(1))
@@ -535,15 +526,8 @@ int sunxi_flash_handle_init(void)
 		sunxi_sprite_write_pt = sunxi_flash_write_pt;
 
 		sunxi_flash_init_uboot(0);
-		script_parser_patch("target", "storage_type", &storage_type, 1);
 
 		tick_printf("sunxi flash init ok\n");
-#if defined(CONFIG_ARCH_SUN8IW1P1)
-		if((storage_type == 0) || (storage_type == 2))	//如果是A31非卡0启动，则需要跳转检测卡0
-		{
-			sunxi_card_probe_mmc0_boot();
-		}
-#endif
 	}
 	else if((workmode & WORK_MODE_PRODUCT) || (workmode == 0x30))		/* 量产模式 */
 	{

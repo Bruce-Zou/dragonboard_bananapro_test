@@ -28,10 +28,11 @@ extern char *__standby_start;
 extern char *__standby_end;
 
 static __u32 sp_backup;
+static __u32 dram_self_refresh = 1;
+static __u32 cpu_clk_src_pll = 0;
 static void standby(void);
-static __u32 dcdc2, dcdc3;
+static __u32 dcdc2, dcdc3, dcdc4;
 static struct pll_factor_t orig_pll;
-static struct pll_factor_t local_pll;
 
 static struct sun4i_clk_div_t  clk_div;
 static struct sun4i_clk_div_t  tmp_clk_div;
@@ -41,6 +42,7 @@ struct aw_pm_info  pm_info;
 
 #define DRAM_BASE_ADDR      0xc0000000
 static __u8 dram_traning_area_back[DRAM_TRANING_SIZE];
+struct standby_ir_buffer ir_buffer; //add by fe3o4
 
 /*
 *********************************************************************************************************
@@ -68,6 +70,8 @@ int main(struct aw_pm_info *arg)
         /* standby parameter is invalid */
         return -1;
     }
+    dram_self_refresh = 1;
+    cpu_clk_src_pll = 0;
 
     /* flush data and instruction tlb, there is 32 items of data tlb and 32 items of instruction tlb,
        The TLB is normally allocated on a rotating basis. The oldest entry is always the next allocated */
@@ -104,6 +108,7 @@ int main(struct aw_pm_info *arg)
         standby_key_init();
         mem_enable_int(INT_SOURCE_LRADC);
     }
+	printk("fe3o4 test print here pm_info.standby_para.event_enable:%x\n", pm_info.standby_para.event_enable);
     if(pm_info.standby_para.event_enable & SUSPEND_WAKEUP_SRC_IR){
         standby_ir_init();
         mem_enable_int(INT_SOURCE_IR0);
@@ -116,6 +121,12 @@ int main(struct aw_pm_info *arg)
     if(pm_info.standby_para.event_enable & SUSPEND_WAKEUP_SRC_USB){
         standby_usb_init();
         mem_enable_int(INT_SOURCE_USB0);
+        mem_enable_int(INT_SOURCE_USB1);
+        mem_enable_int(INT_SOURCE_USB2);
+        mem_enable_int(INT_SOURCE_USB3);
+        mem_enable_int(INT_SOURCE_USB4);
+        dram_self_refresh = 0;
+        cpu_clk_src_pll = 1;
     }
     if(pm_info.standby_para.event_enable & SUSPEND_WAKEUP_SRC_TIMEOFF){
         /* set timer for power off */
@@ -126,29 +137,48 @@ int main(struct aw_pm_info *arg)
     }
     if(pm_info.standby_para.event_enable & SUSPEND_WAKEUP_SRC_PIO){
         mem_enable_int(INT_SOURCE_GPIO);
-        standby_pio_clk_src_init();
     }
 
     /* save stack pointer registger, switch stack to sram */
     sp_backup = save_sp();
     /* enable dram enter into self-refresh */
-    dram_suspend_flag = 1;
-    dram_power_save_process(0);
+    if (dram_self_refresh != 0)
+    {
+        dram_suspend_flag = 1;
+        dram_power_save_process(0);
+    }
 	//mctl_self_refresh_entry();
     
     /* process standby */
     standby();
 
-    /* enable watch-dog to preserve dram training failed */
-    standby_tmr_enable_watchdog();
-    /* restore dram */
-    //dram_power_up_process();
-	//mctl_self_refresh_exit();
-    init_DRAM(&pm_info.dram_para);
-    
-    /* disable watch-dog    */
-    standby_tmr_disable_watchdog();
+    if (dram_self_refresh != 0)
+    {
+        /* enable watch-dog to preserve dram training failed */
+        standby_tmr_enable_watchdog();
+        /* restore dram */
+        //dram_power_up_process();
+        //mctl_self_refresh_exit();
+        init_DRAM(&pm_info.dram_para);
+        
+        /* disable watch-dog    */
+        standby_tmr_disable_watchdog();
+    }
     dram_suspend_flag = 0;
+
+    /* check system wakeup event */
+    pm_info.standby_para.event |= mem_query_int(INT_SOURCE_EXTNMI)? 0:SUSPEND_WAKEUP_SRC_EXINT;
+    pm_info.standby_para.event |= mem_query_int(INT_SOURCE_USB0)? 0:SUSPEND_WAKEUP_SRC_USB;
+    pm_info.standby_para.event |= mem_query_int(INT_SOURCE_LRADC)? 0:SUSPEND_WAKEUP_SRC_KEY;
+    pm_info.standby_para.event |= mem_query_int(INT_SOURCE_IR0)? 0:SUSPEND_WAKEUP_SRC_IR;
+    pm_info.standby_para.event |= mem_query_int(INT_SOURCE_ALARM)? 0:SUSPEND_WAKEUP_SRC_ALARM;
+    pm_info.standby_para.event |= mem_query_int(INT_SOURCE_TIMER0)? 0:SUSPEND_WAKEUP_SRC_TIMEOFF;
+    pm_info.standby_para.event |= mem_query_int(INT_SOURCE_USB0)? 0:SUSPEND_WAKEUP_SRC_USB;
+    pm_info.standby_para.event |= mem_query_int(INT_SOURCE_USB1)? 0:SUSPEND_WAKEUP_SRC_USB;
+    pm_info.standby_para.event |= mem_query_int(INT_SOURCE_USB2)? 0:SUSPEND_WAKEUP_SRC_USB;
+    pm_info.standby_para.event |= mem_query_int(INT_SOURCE_USB3)? 0:SUSPEND_WAKEUP_SRC_USB;
+    pm_info.standby_para.event |= mem_query_int(INT_SOURCE_USB4)? 0:SUSPEND_WAKEUP_SRC_USB;
+    printk("%s:%d, wakeup src:%x!\n", __FILE__, __LINE__, pm_info.standby_para.event);
 
     /* restore stack pointer register, switch stack back to dram */
     restore_sp(sp_backup);
@@ -165,9 +195,6 @@ int main(struct aw_pm_info *arg)
     }
     if(pm_info.standby_para.event_enable & SUSPEND_WAKEUP_SRC_KEY){
         standby_key_exit();
-    }
-    if(pm_info.standby_para.event_enable & SUSPEND_WAKEUP_SRC_PIO){
-        standby_pio_clk_src_exit();
     }
     standby_power_exit(pm_info.standby_para.event_enable);
     standby_tmr_exit();
@@ -199,8 +226,21 @@ int main(struct aw_pm_info *arg)
 */
 static void standby(void)
 {
+    struct pll_factor_t local_pll;
+    int pll_mask = 0xffffffff;
     /* gating off dram clock */
-    standby_clk_dramgating(0);
+    if (dram_self_refresh != 0)
+    {
+        standby_clk_dramgating(0);
+    }
+    if (dram_self_refresh == 0)
+    {
+        pll_mask &= ~(1<<5);     /* keep pll5(dram pll) on*/
+    }
+    if (cpu_clk_src_pll != 0)
+    {
+        pll_mask &= ~(1<<1);      /* keep pll1 on*/
+    }
 
 	/* backup cpu freq */
 	standby_clk_get_pll_factor(&orig_pll);
@@ -214,23 +254,24 @@ static void standby(void)
 	change_runtime_env(1);
 	delay_ms(10);
 	
-    /* switch cpu clock to HOSC, and disable pll */
-    standby_clk_core2hosc();
-	change_runtime_env(1);
-	delay_us(1);
-
-    if (pm_info.standby_para.axp_enable)
+   if (cpu_clk_src_pll == 0)
     {
-        /* backup voltages */
-        dcdc2 = standby_get_voltage(POWER_VOL_DCDC2);
-        dcdc3 = standby_get_voltage(POWER_VOL_DCDC3);
-        
-        /* adjust voltage */
-        standby_set_voltage(POWER_VOL_DCDC3, STANDBY_DCDC3_VOL);
-        standby_set_voltage(POWER_VOL_DCDC2, STANDBY_DCDC2_VOL);
-        printk("adjust dcdc2:%d, dcdc3:%d!\n", standby_get_voltage(POWER_VOL_DCDC2), standby_get_voltage(POWER_VOL_DCDC3));
+        /* switch cpu clock to HOSC, and disable pll */
+        standby_clk_core2hosc();
+        change_runtime_env(1);
+        delay_us(1);
     }
-
+    else
+    {
+        /*lower freq from 384M to 36M*/
+        local_pll.FactorN = 12;
+        local_pll.FactorK = 0;
+        local_pll.FactorM = 0;
+        local_pll.FactorP = 3;
+        standby_clk_set_pll_factor(&local_pll);
+        change_runtime_env(1);
+        delay_ms(10);
+    }
     /* set clock division cpu:axi:ahb:apb = 2:2:2:1 */
     standby_clk_ahb_2pll();
     standby_clk_getdiv(&clk_div);
@@ -238,69 +279,130 @@ static void standby(void)
     tmp_clk_div.ahb_div = 0;
     tmp_clk_div.apb_div = 0;
     standby_clk_setdiv(&tmp_clk_div);
-    
-    /* swtich apb1 to losc */
-    standby_clk_apb2losc();
-	change_runtime_env(1);
+ 
 	//delay_ms(1);
-    standby_clk_plldisable();
-	
-    /* switch cpu to 32k */
-    standby_clk_core2losc();
-    #if(ALLOW_DISABLE_HOSC)
-    // disable HOSC, and disable LDO
-    standby_clk_hoscdisable();
-    standby_clk_ldodisable();
-    #endif
+    standby_clk_plldisable(pll_mask);
+    
 
+    if (pm_info.standby_para.axp_enable)
+    {
+        /* backup voltages */
+        dcdc2 = standby_get_voltage(POWER_VOL_DCDC2);
+		
+		#if defined (CONFIG_AW_AXP20)
+        dcdc3 = standby_get_voltage(POWER_VOL_DCDC3);
+		#endif
+		
+		#if defined (CONFIG_AW_AXP15)
+		dcdc4 = standby_get_voltage(POWER_VOL_DCDC4);
+        #endif
+		
+        /* adjust voltage */
+       if (dram_self_refresh != 0)
+        {
+        	#if defined (CONFIG_AW_AXP20)
+        	standby_set_voltage(POWER_VOL_DCDC3, STANDBY_DCDC3_VOL);
+			#endif
+		
+			#if defined (CONFIG_AW_AXP15)
+			standby_set_voltage(POWER_VOL_DCDC4, STANDBY_DCDC4_VOL);
+        	#endif
+        }
+        if (cpu_clk_src_pll == 0)
+        {
+            standby_set_voltage(POWER_VOL_DCDC2, STANDBY_DCDC2_VOL);
+        } else {
+            standby_set_voltage(POWER_VOL_DCDC2, DVFS_DCDC2_VOL);
+        }
+		
+		#if defined (CONFIG_AW_AXP20)
+        printk("adjust dcdc2:%d, dcdc3:%d!\n", standby_get_voltage(POWER_VOL_DCDC2), standby_get_voltage(POWER_VOL_DCDC3));
+		#endif
+		
+		#if defined (CONFIG_AW_AXP15)
+		printk("adjust dcdc2:%d, dcdc4:%d!\n", standby_get_voltage(POWER_VOL_DCDC2), standby_get_voltage(POWER_VOL_DCDC4));
+        #endif
+        
+    }
+
+
+	
+    if (cpu_clk_src_pll == 0)
+    {
+        /* switch cpu to 32k */
+        standby_clk_apb2losc();
+    	change_runtime_env(1);
+        standby_clk_core2losc();
+    }
+    
+    if (pll_mask == 0xffffffff)
+    {
+        // disable HOSC, and disable LDO
+        standby_clk_hoscdisable();
+        standby_clk_ldodisable();
+    }
     /* cpu enter sleep, wait wakeup by interrupt */
     asm("WFI");
-
-    #if(ALLOW_DISABLE_HOSC)
-    /* enable LDO, enable HOSC */
-    standby_clk_ldoenable();
-    /* delay 1ms for power be stable */
-	//3ms
-    standby_delay_cycle(1);
-    standby_clk_hoscenable();
-	//3ms
-    standby_delay_cycle(1);
-    #endif
-
-	/* switch clock to hosc */
-    standby_clk_core2hosc();
-
-    /* swtich apb1 to hosc */
-    standby_clk_apb2hosc();
-
-    /* restore clock division */
-    standby_clk_setdiv(&clk_div);
-
-    /* check system wakeup event */
-    pm_info.standby_para.event |= mem_query_int(INT_SOURCE_EXTNMI)? 0:SUSPEND_WAKEUP_SRC_EXINT;
-    pm_info.standby_para.event |= mem_query_int(INT_SOURCE_USB0)? 0:SUSPEND_WAKEUP_SRC_USB;
-    pm_info.standby_para.event |= mem_query_int(INT_SOURCE_LRADC)? 0:SUSPEND_WAKEUP_SRC_KEY;
-    pm_info.standby_para.event |= mem_query_int(INT_SOURCE_IR0)? 0:SUSPEND_WAKEUP_SRC_IR;
-    pm_info.standby_para.event |= mem_query_int(INT_SOURCE_ALARM)? 0:SUSPEND_WAKEUP_SRC_ALARM;
-    pm_info.standby_para.event |= mem_query_int(INT_SOURCE_TIMER0)? 0:SUSPEND_WAKEUP_SRC_TIMEOFF;
+    if (pll_mask == 0xffffffff)
+    {
+        /* enable LDO, enable HOSC */
+        standby_clk_ldoenable();
+        /* delay 1ms for power be stable */
+        //3ms
+        standby_delay_cycle(1);
+        standby_clk_hoscenable();
+        //3ms
+        standby_delay_cycle(1);
+    }
+    if (cpu_clk_src_pll == 0)
+    {
+        /* switch clock to hosc */
+        standby_clk_core2hosc();
+        standby_clk_apb2hosc();
+    }
 
     if (pm_info.standby_para.axp_enable)
     {
         /* restore voltage for exit standby */
         standby_set_voltage(POWER_VOL_DCDC2, dcdc2);
+		
+        #if defined (CONFIG_AW_AXP15)
+		standby_set_voltage(POWER_VOL_DCDC4, dcdc4);
+		#endif
+		
+		#if defined (CONFIG_AW_AXP20)
         standby_set_voltage(POWER_VOL_DCDC3, dcdc3);
+        #endif
     }
 
     /* enable pll */
     standby_clk_pllenable();
 	change_runtime_env(1);
 	delay_ms(10);
+    
+    /* restore clock division */
+    standby_clk_setdiv(&clk_div);
 
     standby_clk_ahb_restore();
-    /* switch cpu clock to core pll */
-    standby_clk_core2pll();
-	change_runtime_env(1);
-	delay_ms(10);
+    
+    if (cpu_clk_src_pll == 0)
+    {
+        /* switch cpu clock to core pll */
+        standby_clk_core2pll();
+        change_runtime_env(1);
+        delay_ms(10);
+    }
+    else
+    {
+        /*lower freq from 36M to 384M*/
+        local_pll.FactorN = 16;
+        local_pll.FactorK = 0;
+        local_pll.FactorM = 0;
+        local_pll.FactorP = 0;
+        standby_clk_set_pll_factor(&local_pll);
+        change_runtime_env(1);
+        delay_ms(10);
+    }
 
 	/*restore freq from 384 to 1008M*/
 	standby_clk_set_pll_factor(&orig_pll);
@@ -308,7 +410,10 @@ static void standby(void)
 	delay_ms(5);
 	
     /* gating on dram clock */
-    standby_clk_dramgating(1);
+    if (dram_self_refresh != 0)
+    {
+        standby_clk_dramgating(1);
+    }
 
     return;
 }

@@ -2191,13 +2191,18 @@ EXPORT_SYMBOL(sw_usb_enable_hcd0);
 *
 *******************************************************************************
 */
+extern int sw_usb_suspend_disabled(int usbc_no);
+
 static int sw_hcd_suspend(struct device *dev)
 {
 	struct platform_device *pdev = to_platform_device(dev);
 	unsigned long	flags = 0;
 	struct sw_hcd	*sw_hcd = dev_to_sw_hcd(&pdev->dev);
 
+    if(sw_usb_suspend_disabled(0))
+        return 0;
 	DMSG_INFO_HCD0("sw_hcd_suspend start\n");
+    
 	if(!sw_hcd->enable){
 		DMSG_INFO("wrn: hcd is disable, need not enter to suspend\n");
 		return 0;
@@ -2246,7 +2251,11 @@ static int sw_hcd_resume(struct device *dev)
 	unsigned long	flags = 0;
 	struct sw_hcd	*sw_hcd = dev_to_sw_hcd(&pdev->dev);
 
+    if(sw_usb_suspend_disabled(0))
+        return 0;
+        
 	DMSG_INFO_HCD0("sw_hcd_resume start\n");
+    
 	if(!sw_hcd->enable){
 		DMSG_INFO("wrn: hcd is disable, need not resume\n");
 		return 0;

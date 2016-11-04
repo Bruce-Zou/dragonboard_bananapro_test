@@ -37,12 +37,12 @@ tmp_pin25=`script_fetch "gpio_pins" "gpio_pin25"`
 tmp_pin26=`script_fetch "gpio_pins" "gpio_pin26"`
 tmp_pin27=`script_fetch "gpio_pins" "gpio_pin27"`
 tmp_pin28=`script_fetch "gpio_pins" "gpio_pin28"`
-tmp_pin29=`script_fetch "gpio_pins" "gpio_pin29"`
-tmp_pin30=`script_fetch "gpio_pins" "gpio_pin30"`
-tmp_pin31=`script_fetch "gpio_pins" "gpio_pin31"`
-tmp_pin32=`script_fetch "gpio_pins" "gpio_pin32"`
-tmp_pin33=`script_fetch "gpio_pins" "gpio_pin33"`
 
+if [ -z "$tmp_pin1" ]; then
+	echo "gpio_pin not config"
+	SEND_CMD_PIPE_FAIL $3
+    exit 1        
+else
 	tmp1=${tmp_pin1%%<*}
 	gpio_pin1=${tmp1#*:}
 
@@ -126,23 +126,15 @@ tmp_pin33=`script_fetch "gpio_pins" "gpio_pin33"`
 
         tmp28=${tmp_pin28%%<*}
         gpio_pin28=${tmp28#*:}
-
-        tmp29=${tmp_pin29%%<*}
-        gpio_pin29=${tmp29#*:}
-
-        tmp30=${tmp_pin30%%<*}
-        gpio_pin30=${tmp30#*:}
-
-        tmp31=${tmp_pin31%%<*}
-        gpio_pin31=${tmp31#*:}
-
-        tmp32=${tmp_pin32%%<*}
-        gpio_pin32=${tmp32#*:}
-
-        tmp33=${tmp_pin33%%<*}
-        gpio_pin33=${tmp33#*:}
+fi
 
 
+
+#if [ ! -d "/sys/class/gpio_sw/${gpio_pin[$nr]}" ]; then
+#	echo "mabey cant intall gpio-sunxi.ko"
+#	SEND_CMD_PIPE_FAIL $3
+#    exit 1
+#else
 	pin_data1="/sys/class/gpio_sw/"${gpio_pin1}"/data"
         pin_data2="/sys/class/gpio_sw/"${gpio_pin2}"/data"
         pin_data3="/sys/class/gpio_sw/"${gpio_pin3}"/data"
@@ -171,34 +163,29 @@ tmp_pin33=`script_fetch "gpio_pins" "gpio_pin33"`
         pin_data26="/sys/class/gpio_sw/"${gpio_pin26}"/data"
         pin_data27="/sys/class/gpio_sw/"${gpio_pin27}"/data"
         pin_data28="/sys/class/gpio_sw/"${gpio_pin28}"/data"
-        pin_data29="/sys/class/gpio_sw/"${gpio_pin29}"/data"
-        pin_data30="/sys/class/gpio_sw/"${gpio_pin30}"/data"
-        pin_data31="/sys/class/gpio_sw/"${gpio_pin31}"/data"
-        pin_data32="/sys/class/gpio_sw/"${gpio_pin32}"/data"
-	pin_data33="/sys/class/gpio_sw/"${gpio_pin33}"/data"
 #fi
 
 while true ; do
 
-for nr in [ 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 ]; do
+for nr in [ 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 ]; do
 	temp_data=pin_data$nr                  
         eval temp_data=\$$temp_data  
 	echo 1 > ${temp_data}
-#	if [ $? -ne 0 ]; then
-#		SEND_CMD_PIPE_FAIL $3
-#		exit 1
-#	fi
+	if [ $? -ne 0 ]; then
+		SEND_CMD_PIPE_FAIL $3
+		exit 1
+	fi
 done
 	sleep 2
 
-for nr in [ 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 ]; do
+for nr in [ 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 ]; do
 	temp_data=pin_data$nr
         eval temp_data=\$$temp_data 
 	echo 0 > ${temp_data}
-#	if [ $? -ne 0 ]; then
-#		SEND_CMD_PIPE_FAIL $3
-#		exit 1
-#	fi
+	if [ $? -ne 0 ]; then
+		SEND_CMD_PIPE_FAIL $3
+		exit 1
+	fi
 done
 
 	SEND_CMD_PIPE_OK $3

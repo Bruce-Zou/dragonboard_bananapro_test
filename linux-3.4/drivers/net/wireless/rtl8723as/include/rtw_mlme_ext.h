@@ -598,7 +598,7 @@ void SelectChannel(_adapter *padapter, unsigned char channel);
 void SetBWMode(_adapter *padapter, unsigned short bwmode, unsigned char channel_offset);
 
 unsigned int decide_wait_for_beacon_timeout(unsigned int bcn_interval);
-void read_cam(_adapter *padapter ,u8 entry);
+
 void write_cam(_adapter *padapter, u8 entry, u16 ctrl, u8 *mac, u8 *key);
 void clear_cam_entry(_adapter *padapter, u8 entry);
 
@@ -789,6 +789,7 @@ extern void correct_TSF(_adapter *padapter, struct mlme_ext_priv *pmlmeext);
 
 #ifdef CONFIG_CONCURRENT_MODE
  sint check_buddy_mlmeinfo_state(_adapter *padapter, u32 state);
+int concurrent_chk_start_clnt_join(_adapter *padapter);
 void concurrent_chk_joinbss_done(_adapter *padapter, int join_res);
 #endif //CONFIG_CONCURRENT_MODE
 
@@ -807,7 +808,6 @@ void	dc_resume_xmit(_adapter *padapter);
 u8	dc_check_xmit(_adapter *padapter);
 #endif
 
-int rtw_chk_start_clnt_join(_adapter *padapter);
 int rtw_get_ch_setting_union(_adapter *adapter, u8 *ch, u8 *bw, u8 *offset);
 
 struct cmd_hdl {

@@ -21,8 +21,6 @@
 #ifndef _PMU_H_
 #define _PMU_H_
 
-#define PMU_PRE_FASTBOOT_MODE      (0x0c)
-#define PMU_PRE_FACTORY_MODE       (0x0d)
 #define PMU_PRE_SYS_MODE           (0x0e)
 #define PMU_PRE_BOOT_MODE          (0x0f)
 
@@ -31,8 +29,6 @@
 
 #define AXP_VBUS_EXIST             (2)
 #define AXP_DCIN_EXIST             (3)
-#define AXP_VBUS_DCIN_NOT_EXIST		(4)
-#define BATTERY_EXIST 			(0X20)
 
 
 #define PMU_SUPPLY_DCDC_TYPE    (0x00010000)
@@ -70,7 +66,6 @@
 extern int axp_probe(void);
 extern int axp_reinit(void);
 
-extern int axp_probe_factory_mode(void);
 extern int axp_set_supply_status(int pmu_type, int vol_name, int vol_value, int onoff);
 extern int axp_set_power_supply_output(void);
 extern int axp_set_supply_status_byname(char *vol_type, int vol_value, int onoff);
@@ -81,7 +76,6 @@ extern int axp_probe_startup_cause(void);
 extern int axp_probe_power_supply_condition(void);
 extern int axp_set_power_off(void);
 extern int axp_set_next_poweron_status(int data);
-extern int axp_probe_pre_sys_mode(void);
 
 extern int axp_probe_key(void);
 

@@ -87,14 +87,14 @@ void mctl_itm_enable(void)
 void mctl_enable_dll0(__u32 phase)
 {
     mctl_write_w(SDR_DLLCR0, (mctl_read_w(SDR_DLLCR0) & ~(0x3f<<6)) | (((phase>>16)&0x3f)<<6));
-    mctl_write_w(SDR_DLLCR0, (mctl_read_w(SDR_DLLCR0) & (~0x40000000)) | 0x80000000);
+    mctl_write_w(SDR_DLLCR0, (mctl_read_w(SDR_DLLCR0) & ~0x40000000) | 0x80000000);
 
 	standby_delay(0x100);
 
     mctl_write_w(SDR_DLLCR0, mctl_read_w(SDR_DLLCR0) & ~0xC0000000);
 	standby_delay(0x1000);
 
-    mctl_write_w(SDR_DLLCR0, (mctl_read_w(SDR_DLLCR0) & (~0x80000000)) | 0x40000000);
+    mctl_write_w(SDR_DLLCR0, mctl_read_w(SDR_DLLCR0) & ~0x80000000 | 0x40000000);
     standby_delay(0x1000);
 }
 
@@ -115,8 +115,8 @@ void mctl_enable_dllx(__u32 phase)
 
     for(i=1; i<dll_num; i++)
 	{
-		mctl_write_w(SDR_DLLCR0+(i<<2), (mctl_read_w(SDR_DLLCR0+(i<<2)) & (~(0xf<<14))) | ((dqs_phase&0xf)<<14));
-		mctl_write_w(SDR_DLLCR0+(i<<2), (mctl_read_w(SDR_DLLCR0+(i<<2)) & (~0x40000000)) | 0x80000000);
+		mctl_write_w(SDR_DLLCR0+(i<<2), mctl_read_w(SDR_DLLCR0+(i<<2)) & ~(0xf<<14) | ((dqs_phase&0xf)<<14));
+		mctl_write_w(SDR_DLLCR0+(i<<2), mctl_read_w(SDR_DLLCR0+(i<<2)) & ~0x40000000 | 0x80000000);
 		dqs_phase = dqs_phase>>4;
 	}
 
@@ -131,7 +131,7 @@ void mctl_enable_dllx(__u32 phase)
 
     for(i=1; i<dll_num; i++)
     {
-        mctl_write_w(SDR_DLLCR0+(i<<2), (mctl_read_w(SDR_DLLCR0+(i<<2)) & (~0x80000000)) | 0x40000000);
+        mctl_write_w(SDR_DLLCR0+(i<<2), mctl_read_w(SDR_DLLCR0+(i<<2)) & ~0x80000000 | 0x40000000);
     }
     standby_delay(0x1000);
 }
@@ -246,7 +246,7 @@ __s32 DRAMC_init(boot_dram_para_t *para)
 {
     __u32 reg_val;
 	__u32 hold_flag = 0;
-   // __u8  reg_value;
+    __u8  reg_value;
     __s32 ret_val;  
 
     //check input dram parameter structure

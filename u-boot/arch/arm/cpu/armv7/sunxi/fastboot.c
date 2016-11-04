@@ -68,10 +68,8 @@
 #define FASTBOOT_CCMU                   0x01c20000
 
 /* vid & pid */
-//#define	DEVICE_VENDOR_ID  					0x0BB4
-//#define	DEVICE_PRODUCT_ID 					0x0FFF
-#define	DEVICE_VENDOR_ID  					0x1F3A
-#define	DEVICE_PRODUCT_ID 					0x1010
+#define	DEVICE_VENDOR_ID  					0x0BB4  //0x1F3A
+#define	DEVICE_PRODUCT_ID 					0x0FFF  //0x1010
 #define	DEVICE_BCD        					0x0200
 
 #define DEVICE_MANUFACTURER		            "USB Developer"  		/* 厂商信息 	*/
@@ -1112,8 +1110,6 @@ static int fastboot_rx(void)
 				err = 0;
 			}
 		}
-		
-        memset(fastboot_fifo_bulk_ep,0,BULK_FIFOSIZE);
 
 		if(err){
 		    DMSG_PANIC("err: rx_handler failed\n");

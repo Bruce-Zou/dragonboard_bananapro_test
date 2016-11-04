@@ -25,7 +25,7 @@ MODULE_DESCRIPTION("A low-level driver for Superpix sp0838 sensors");
 MODULE_LICENSE("GPL");
 
 //for internel driver debug
-#define DEV_DBG_EN   		1 
+#define DEV_DBG_EN   		0 
 #if(DEV_DBG_EN == 1)		
 #define csi_dev_dbg(x,arg...) printk(KERN_INFO"[CSI_DEBUG][SP0838]"x,##arg)
 #else
@@ -954,8 +954,8 @@ static int sensor_power(struct v4l2_subdev *sd, int on)
 			//inactive mclk after stadby in
 			clk_disable(dev->csi_module_clk);
 			//reset on io
-			//csi_gpio_write(sd,&dev->reset_io,CSI_RST_ON);
-			//mdelay(10);
+			csi_gpio_write(sd,&dev->reset_io,CSI_RST_ON);
+			mdelay(10);
 			break;
 		case CSI_SUBDEV_STBY_OFF:
 			csi_dev_dbg("CSI_SUBDEV_STBY_OFF\n");
@@ -966,12 +966,12 @@ static int sensor_power(struct v4l2_subdev *sd, int on)
 			csi_gpio_write(sd,&dev->standby_io,CSI_STBY_OFF);
 			mdelay(10);
 			//reset off io
-			//csi_gpio_write(sd,&dev->reset_io,CSI_RST_OFF);
-			//mdelay(10);
-			//csi_gpio_write(sd,&dev->reset_io,CSI_RST_ON);
-			//mdelay(100);
-			//csi_gpio_write(sd,&dev->reset_io,CSI_RST_OFF);
-			//mdelay(100);
+			csi_gpio_write(sd,&dev->reset_io,CSI_RST_OFF);
+			mdelay(10);
+			csi_gpio_write(sd,&dev->reset_io,CSI_RST_ON);
+			mdelay(100);
+			csi_gpio_write(sd,&dev->reset_io,CSI_RST_OFF);
+			mdelay(100);
 			break;
 		case CSI_SUBDEV_PWR_ON:
 			csi_dev_dbg("CSI_SUBDEV_PWR_ON\n");

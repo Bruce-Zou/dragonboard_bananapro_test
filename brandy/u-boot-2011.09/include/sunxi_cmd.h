@@ -52,8 +52,4 @@ extern int do_key_test (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[
 
 extern int do_shutdown (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]);
 
-extern int do_sunxi_boot_signature(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[]);
-
-extern int do_bootd (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]);
-
 #endif  /* _XILINX_H_ */

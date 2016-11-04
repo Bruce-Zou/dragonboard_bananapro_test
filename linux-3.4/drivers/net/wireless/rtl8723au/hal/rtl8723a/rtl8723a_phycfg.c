@@ -165,7 +165,7 @@ rtl8192c_PHY_SetBBReg(
 	if(BitMask!= bMaskDWord){//if not "double word" write
 		OriginalValue = rtw_read32(Adapter, RegAddr);
 		BitShift = phy_CalculateBitShift(BitMask);
-		Data = ((OriginalValue & (~BitMask)) | ((Data << BitShift) & BitMask));
+		Data = ((OriginalValue & (~BitMask)) | (Data << BitShift));
 	}
 
 	rtw_write32(Adapter, RegAddr, Data);
@@ -708,7 +708,7 @@ s32 PHY_MACConfig8723A(PADAPTER Adapter)
 
 
 	// 2010.07.13 AMPDU aggregation number 9
-	//rtw_write8(Adapter, REG_MAX_AGGR_NUM, MAX_AGGR_NUM);
+	//rtw_write16(Adapter, REG_MAX_AGGR_NUM, MAX_AGGR_NUM);
 	rtw_write8(Adapter, REG_MAX_AGGR_NUM, 0x0A); //By tynli. 2010.11.18.
 #ifdef CONFIG_USB_HCI
 	if(is92C && (BOARD_USB_DONGLE == pHalData->BoardType))

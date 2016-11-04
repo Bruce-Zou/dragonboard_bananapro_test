@@ -227,15 +227,10 @@ typedef struct _SETAOAC_GLOBAL_INFO{
 #define FW_WOWLAN_GPIO_WAKEUP_EN		BIT(0)
 #define FW_FW_PARSE_MAGIC_PKT			BIT(1)
 
-#define FW_WOWLAN_KEEP_ALIVE_EN			BIT(0)
-#define FW_WOWLAN_KEEP_ALIVE_PKT_TYPE	BIT(2)
-
 #define FW_REMOTE_WAKE_CTRL_EN			BIT(0)
 #define FW_ARP_EN						BIT(1)
 #define FW_REALWOWLAN_EN				BIT(5)
 #define FW_WOW_FW_UNICAST_EN			BIT(7)
-
-#define FW_ADOPT_USER					BIT(1)
 void rtl8188es_set_wowlan_cmd(_adapter* padapter, u8 enable);
 void SetFwRelatedForWoWLAN8188ES(_adapter* padapter, u8 bHostIsGoingtoSleep);
 #endif//CONFIG_WOWLAN

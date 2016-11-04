@@ -40,7 +40,7 @@
 	.globl boot_store_sp
 boot_store_sp:
 	STMFD   sp!, {r0-r3}
-	ldr  r1, =0xef0
+	mov  r1, #0x200
 	str  sp, [r1]
 
 	mov  pc, lr
@@ -62,7 +62,7 @@ boot_store_sp:
 */
 	.globl boot_restore_sp
 boot_restore_sp:
-	ldr  r1, =0xef0
+	mov  r1, #0x200
 	ldr  sp, [r1]
 	LDMFD   sp!, {r0-r3}
 
@@ -85,12 +85,11 @@ boot_restore_sp:
 */
 	.globl boot_set_sp
 boot_set_sp:
-	ldr  sp, =0x7000
+	ldr  sp, =0xb400
 	mov  pc, lr
 
 	.globl boot_halt
 boot_halt:
 	wfi
 
-	mov  pc, lr
 

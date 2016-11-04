@@ -185,24 +185,6 @@ void nand_shutdown(struct platform_device *plat_dev)
     nand_dbg_err("[NAND]shutdown end\n");
 }
 
-static int nand_dram_notify(struct notifier_block *nb, unsigned long event, void *cmd)
-{
-    int i = 0;
-    if (event == DRAMFREQ_NOTIFY_PREPARE){
-				printk("[NAND] before  lock\n");
-				lock_all_blk();
-				NAND_PhysicLock();
-				printk("[NAND] after  lock\n");
-    }
-    if (event == DRAMFREQ_NOTIFY_DONE){
-        printk("[NAND] before  unlock\n");
-        NAND_PhysicUnLock();
-		unlock_all_blk();
-			printk("[NAND] after  lock\n");    
-    }
-    return 0;
-}
-
 /*****************************************************************************
 *Name         :
 *Description  :
@@ -234,10 +216,6 @@ static struct platform_device nand_device = {
 	.id		= 33,
 	.resource	= &flash_resource,
 	.num_resources	= 1,
-};
-
-static struct notifier_block nand_notifier = {
-       .notifier_call = nand_dram_notify,
 };
 
 
@@ -340,8 +318,9 @@ int __init nand_init(void)
 	//platform_device_register(&nand_device);
    	platform_driver_register(&nand_driver);
 
-	dramfreq_register_notifier(&nand_notifier);
+
     time_used = 0;
+
     init_blklayer();
 
     nand_dbg_err("nand init end \n");

@@ -177,16 +177,6 @@ void sunxi_dma_init(void)
 	dma_int_count = 0;
 	irq_install_handler(AW_IRQ_DMA, sunxi_dma_int_func, 0);
 
-#if defined(CONFIG_ARCH_SUN8IW3P1)
-	{
-		u32 reg_val;
-
-		reg_val = *(volatile unsigned int *)(SUNXI_DMA_BASE + 0x20);
-		reg_val &= ~7;
-		reg_val |= 4;
-		*(volatile unsigned int *)(SUNXI_DMA_BASE + 0x20) = reg_val;
-	}
-#endif
 	return ;
 }
 /*
@@ -363,7 +353,6 @@ int sunxi_dma_start(uint hdma, uint saddr, uint daddr, uint bytes)
 
 	dma_channal->channal->start_addr = (uint)(dma_channal->config);
 
-	asm volatile("dmb");
 	//flush_cache((uint)&(dma_channal->config), sizeof(sunxi_dma_start_t));
 
 	dma_channal->channal->enable = 1;

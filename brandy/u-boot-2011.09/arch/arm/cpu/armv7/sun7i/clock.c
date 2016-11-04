@@ -366,7 +366,7 @@ int sunxi_clock_get_axi(void)
 	__u32 reg_val;
 	__u32 clock_src, factor;
 
-	reg_val   = readl(CCM_AHB_APB0_CTRL);
+	reg_val   = readl(CCM_AHB1_APB1_CTRL);
 	clock_src = (reg_val >> 16) & 0x03;
 	factor    = ((reg_val >> 0) & 0x03) + 1;
 
@@ -413,7 +413,7 @@ int sunxi_clock_get_ahb(void)
 	int factor;
 	int clock;
 
-	reg_val = readl(CCM_AHB_APB0_CTRL);
+	reg_val = readl(CCM_AHB1_APB1_CTRL);
 	factor  = (reg_val >> 4) & 0x03;
 	clock   = sunxi_clock_get_axi()>>factor;
 
@@ -442,7 +442,7 @@ int sunxi_clock_get_apb1(void)
 	unsigned int reg_val;
 	int          clock, factor;
 
-	reg_val = readl(CCM_AHB_APB0_CTRL);
+	reg_val = readl(CCM_AHB1_APB1_CTRL);
 	factor  = (reg_val >> 8) & 0x03;
 	clock   = sunxi_clock_get_ahb();
 
@@ -480,7 +480,7 @@ int sunxi_clock_get_apb2(void)
 	__u32 clock = 0;
 	__u32 factor;
 
-	factor = (readl(CCM_AHB_APB0_CTRL) >> 24) & 0x03;
+	factor = (readl(CCM_AHB1_APB1_CTRL) >> 24) & 0x03;
 	if(factor == 0)
 	{
 		clock = 24000;
@@ -585,7 +585,7 @@ static int clk_set_divd(int pll)
 __u32 sunxi_clock_set_corepll(__u32 clock_frequency, __u32 core_vol)
 {
     __u32 reg_val;
-    volatile __u32 i;
+    __u32 i;
     struct core_pll_freq_tbl  pll_factor;
     //检查时钟是否合法
     if((!clock_frequency) || (clock_frequency > 2 * 1024 * 1024))
@@ -598,10 +598,10 @@ __u32 sunxi_clock_set_corepll(__u32 clock_frequency, __u32 core_vol)
         //设置时钟不到24M，则运行在默认频率
         clock_frequency = 24;
         //切换到24M
-        reg_val = readl(CCM_AHB_APB0_CTRL);
+        reg_val = readl(CCM_AHB1_APB1_CTRL);
         reg_val &= ~(0x03 << 16);
         reg_val |=  (0x01 << 16);
-        writel(CCM_AHB_APB0_CTRL,reg_val);
+        writel(CCM_AHB1_APB1_CTRL,reg_val);
 
         return 24;
     }
@@ -625,11 +625,11 @@ __u32 sunxi_clock_set_corepll(__u32 clock_frequency, __u32 core_vol)
 		}
     }
     
-    reg_val = readl(CCM_AHB_APB0_CTRL);
+    reg_val = readl(CCM_AHB1_APB1_CTRL);
     reg_val &= ~(0x03 << 16);
     reg_val |=  (0x01 << 16);
-    writel(CCM_AHB_APB0_CTRL,reg_val);
-    //delay, make sure the clock is stable.
+    writel(CCM_AHB1_APB1_CTRL,reg_val);
+    //延时，等待时钟稳定
     for(i=0; i<0x4000; i++);
     //调整时钟频率
 	clk_get_pll_para(&pll_factor, clock_frequency);
@@ -639,20 +639,20 @@ __u32 sunxi_clock_set_corepll(__u32 clock_frequency, __u32 core_vol)
 	reg_val |=  (pll_factor.FactorN<<8) | (pll_factor.FactorK<<4) | (pll_factor.FactorP << 16) | (pll_factor.FactorM << 0);
     writel(reg_val, CCM_PLL1_CPUX_CTRL);
     //修改AXI,AHB,APB分频
-    reg_val = readl(CCM_AHB_APB0_CTRL);
+    reg_val = readl(CCM_AHB1_APB1_CTRL);
     reg_val &= ~(0x3ff << 0);
     reg_val |=  (pll_factor.clk_div << 0);
     //修改ATB
     reg_val &= ~(0x03<<2);
     reg_val |=  (0x02<<2);
-    writel(reg_val, CCM_AHB_APB0_CTRL);
+    writel(reg_val, CCM_AHB1_APB1_CTRL);
     //延时，等待时钟稳定
     for(i=0; i<0x4000; i++);
     //切换时钟到COREPLL上
-    reg_val = readl(CCM_AHB_APB0_CTRL);
+    reg_val = readl(CCM_AHB1_APB1_CTRL);
     reg_val &= ~(0x03 << 16);
     reg_val |=  (0x02 << 16);
-    writel(reg_val, CCM_AHB_APB0_CTRL);
+    writel(reg_val, CCM_AHB1_APB1_CTRL);
 
     return  sunxi_clock_get_corepll();
 }
@@ -720,7 +720,7 @@ int sunxi_clock_set_mbus(void)
 
     /* config mbus0 */
     writel((0x81000000|(factor_n-1)), CCM_MBUS_SCLK_CTRL0);
-    //writel((0x81000000|(factor_n-1)), CCM_MBUS_SCLK_CTRL1);
+    writel((0x81000000|(factor_n-1)), CCM_MBUS_SCLK_CTRL1);
 
     return 0;
 }

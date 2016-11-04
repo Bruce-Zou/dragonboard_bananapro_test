@@ -59,8 +59,6 @@ build_standby()
             silentoldconfig
     fi
     make ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} KDIR=${LICHEE_KDIR} \
-        -C ${LICHEE_KDIR}/arch/arm/mach-sun7i/pm/dram-freq all
-    make ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} KDIR=${LICHEE_KDIR} \
         -C ${LICHEE_KDIR}/arch/arm/mach-sun7i/pm/standby all
 }
 

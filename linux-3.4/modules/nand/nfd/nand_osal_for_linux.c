@@ -83,7 +83,6 @@ static int nanddma_ready_flag[2] = {1, 1};
 
 #endif
 
-//#define NAND_DEBUG
 //#define RB_INT_MSG_ON
 #ifdef  RB_INT_MSG_ON
 #define dbg_rbint(fmt, args...) printk(fmt, ## args)
@@ -630,14 +629,13 @@ void NAND_Free(void *pAddr, unsigned int Size)
 
 int NAND_Print(const char *fmt, ...)
 {
-	int r = 0;
-#ifdef NAND_DEBUG
 	va_list args;
+	int r;
 
 	va_start(args, fmt);
 	r = vprintk(fmt, args);
 	va_end(args);
-#endif
+	
 	return r;
 }
 

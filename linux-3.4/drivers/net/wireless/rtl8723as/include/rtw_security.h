@@ -124,7 +124,6 @@ struct security_priv
 	u32	  dot11PrivacyKeyIndex;	// this is only valid for legendary wep, 0~3 for key id. (tx key index)
 	union Keytype dot11DefKey[4];			// this is only valid for def. key	
 	u32 	dot11DefKeylen[4];
-	u8 	key_mask; /* use to restore wep key after hal_init */
 
 	u32 dot118021XGrpPrivacy;	// This specify the privacy algthm. used for Grp key 
 	u32	dot118021XGrpKeyid;		// key id used for Grp Key ( tx key index)
@@ -458,9 +457,5 @@ void rtw_use_tkipkey_handler(void* FunctionContext);
 #ifdef PLATFORM_FREEBSD
 void rtw_use_tkipkey_handler(void* FunctionContext);
 #endif //PLATFORM_FREEBSD
-
-void rtw_sec_restore_wep_key(_adapter *adapter);
-u8 rtw_handle_tkip_countermeasure(_adapter* adapter, const char *caller);
-
 #endif	//__RTL871X_SECURITY_H_
 

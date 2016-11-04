@@ -247,7 +247,6 @@ int sunxi_bmp_decode(unsigned long addr, sunxi_bmp_store_t *bmp_info)
 {
 	char *tmp_buffer;
 	char *bmp_data;
-	int zero_num = 0;
 	bmp_image_t *bmp = (bmp_image_t *)addr;
 	int x, y, bmp_bpix;
 
@@ -266,10 +265,6 @@ int sunxi_bmp_decode(unsigned long addr, sunxi_bmp_store_t *bmp_info)
 
 		return -1;
 	}
-	if(bmp_bpix ==3)
-	{		
-		zero_num = (4 - ((3*bmp->header.width) % 4))&3;
-	}
 	debug("bmp bitcount %d\n", bmp->header.bit_count);
 	x = bmp->header.width;
 	y = (bmp->header.height & 0x80000000) ? (-bmp->header.height):(bmp->header.height);
@@ -279,36 +274,19 @@ int sunxi_bmp_decode(unsigned long addr, sunxi_bmp_store_t *bmp_info)
 	bmp_data = (char *)(addr + bmp->header.data_offset);
 	if(bmp->header.height & 0x80000000)
     {
-	      if(zero_num == 0)
-                {
-                    memcpy(tmp_buffer,bmp_data,x*y*bmp_bpix);
-                }
-                else
-                {
-                    int i, line_bytes, real_line_byte;	
-	            char *src;
-	            line_bytes = (x * bmp_bpix) + zero_num;
-		    real_line_byte = x * bmp_bpix;
-		    for(i=0; i<y; i++)
-                   {
-             	    src = bmp_data + i*line_bytes;
-                     memcpy(tmp_buffer, src, real_line_byte);
-                    tmp_buffer += real_line_byte;
-                    }
-                }
+        memcpy(tmp_buffer, bmp_data, x * y * bmp_bpix);
     }
     else
     {
-    	uint i, line_bytes, real_line_byte;
+    	uint i, line_bytes;
         char *src;
 
-		line_bytes = (x * bmp_bpix) + zero_num;
-		real_line_byte = x * bmp_bpix;
+		line_bytes = x * bmp_bpix;
 		for(i=0; i<y; i++)
         {
         	src = bmp_data + (y - i - 1) * line_bytes;
-        	memcpy(tmp_buffer, src, real_line_byte);
-            tmp_buffer += real_line_byte;
+        	memcpy(tmp_buffer, src, line_bytes);
+            tmp_buffer += line_bytes;
         }
     }
     bmp_info->x = x;

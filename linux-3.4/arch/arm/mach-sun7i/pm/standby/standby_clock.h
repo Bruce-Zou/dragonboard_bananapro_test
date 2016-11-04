@@ -36,7 +36,7 @@ __s32 standby_clk_exit(void);
 __s32 standby_clk_core2losc(void);
 __s32 standby_clk_core2hosc(void);
 __s32 standby_clk_core2pll(void);
-__s32 standby_clk_plldisable(void);
+__s32 standby_clk_plldisable(int mask);
 __s32 standby_clk_pllenable(void);
 __s32 standby_clk_hoscdisable(void);
 __s32 standby_clk_hoscenable(void);
@@ -49,8 +49,6 @@ __s32 standby_clk_apbinit(void);
 __s32 standby_clk_apbexit(void);
 __s32 standby_clk_apb2losc(void);
 __s32 standby_clk_apb2hosc(void);
-void standby_pio_clk_src_init();
-void standby_pio_clk_src_exit();
 
 extern __u32   cpu_ms_loopcnt;
 

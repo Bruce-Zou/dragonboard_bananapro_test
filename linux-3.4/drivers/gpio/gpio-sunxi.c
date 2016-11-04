@@ -542,7 +542,7 @@ static int __init gpio_sw_init(void)
 	for(i=0;i<cnt;i++){
 		if(gpio_request(list[i].gpio.gpio, NULL)){
 			printk("gpio_pin_%d gpio_request fail \n",i+1);
-//			continue;
+			continue;
 		}
 		sw_pdata[i] = kzalloc(sizeof(struct sw_gpio_pd), GFP_KERNEL);
 		if(!sw_pdata[i]){

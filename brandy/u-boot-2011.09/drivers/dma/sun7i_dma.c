@@ -112,7 +112,6 @@ static void sunxi_dma_int_func(void *p)
     int i;
 	uint pending;
 	sunxi_dma_int_set *dma_int = (sunxi_dma_int_set *)SUNXI_DMA_BASE;
-
 	for(i=0; i<SUNXI_DMA_MAX; i++)
 	{
 		if(dma_channal[i].dma_func.m_func)
@@ -121,7 +120,6 @@ static void sunxi_dma_int_func(void *p)
 			if(dma_int->irq_pend & pending)
 			{
 				dma_int->irq_pend = pending;
-
 				dma_channal[i].dma_func.m_func(dma_channal[i].dma_func.m_data);
 			}
 		}
@@ -255,7 +253,9 @@ uint sunxi_dma_request(uint dmatype)
 */
 int sunxi_dma_release(uint hDma)
 {
-	 sw_dma_channal_set_t  *dma_channal = (sw_dma_channal_set_t *)hDma;
+
+	sw_dma_channal_set_t  *dma_channal = (sw_dma_channal_set_t *)hDma;
+	
 	sunxi_dma_disable_int(hDma);
 	sunxi_dma_free_int(hDma);
     /* stop dma */    
@@ -263,6 +263,7 @@ int sunxi_dma_release(uint hDma)
 	/* free dma handle */    
 	dma_channal->used = 0;    
 	dma_channal->channalNo = -1;
+
     return 0;
 }
 /*
@@ -309,7 +310,7 @@ int sunxi_dma_setting(uint hDMA, sunxi_dma_setting_t *cfg)
 		value = *tmp;
         pDma->channal->config       = value & (~0x80000000);
         pDma->other->src_wait_cyc         = arg->wait_cyc;
-		pDma->other->src_data_block_size  = arg->data_block_size;
+        pDma->other->src_data_block_size  = arg->data_block_size;
         pDma->other->dst_wait_cyc         = arg->wait_cyc;
         pDma->other->dst_data_block_size  = arg->data_block_size;
     }

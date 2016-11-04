@@ -545,16 +545,16 @@ void ccm_set_cpu_l2_axi_div(u32 periph_div, u32 l2_div, u32 axi_div)
 
 void ccm_set_ahb1_clk_src(u32 src)
 {
-	u32 rval = readl(CCM_AHB_APB0_CTRL);
+	u32 rval = readl(CCM_AHB1_APB1_CTRL);
 	rval &= ~(3 << 12);
 	rval |= src << 12;
-	writel(rval, CCM_AHB_APB0_CTRL);
+	writel(rval, CCM_AHB1_APB1_CTRL);
 }
 
 void ccm_set_ahb1_apb1_div(u32 prediv, u32 ahb1_div, u32 apb1_div)
 {
 	u32 ahb1div;
-	u32 rval = readl(CCM_AHB_APB0_CTRL);
+	u32 rval = readl(CCM_AHB1_APB1_CTRL);
 
 	switch (ahb1_div) {
 		case 1:
@@ -575,7 +575,7 @@ void ccm_set_ahb1_apb1_div(u32 prediv, u32 ahb1_div, u32 apb1_div)
 	}
 	rval &= ~(0x3f << 4); //(3 << 6) | (3 << 4) | (3 << 8)
 	rval |= (apb1_div << 8) | ((prediv-1) << 6) | (ahb1div << 4);
-	writel(rval, CCM_AHB_APB0_CTRL);
+	writel(rval, CCM_AHB1_APB1_CTRL);
 }
 
 s32 ccm_set_apb2_clk(u32 apb2_clk)
@@ -660,7 +660,7 @@ u32 ccm_get_ahb1_clk(void)
 	u32 rval;
 	u32 ahb1pdiv;
 	u32 ahb1div;
-	rval = readl(CCM_AHB_APB0_CTRL);
+	rval = readl(CCM_AHB1_APB1_CTRL);
 	src = 0x3 & (rval >> 12);
 	ahb1pdiv = (0x3 & (rval >> 6)) + 1;
 	ahb1div = 1 << (0x3 & (rval >> 4));
@@ -690,7 +690,7 @@ u32 ccm_get_apb1_clk(void)
 	u32 rval;
 	u32 apb1div;
 
-	rval = readl(CCM_AHB_APB0_CTRL);
+	rval = readl(CCM_AHB1_APB1_CTRL);
 	apb1div = 0x3 & (rval >> 8);
 	if (apb1div == 0)
 		apb1div = 1;

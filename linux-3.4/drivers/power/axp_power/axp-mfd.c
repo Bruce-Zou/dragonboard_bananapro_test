@@ -17,8 +17,7 @@
 #include <mach/system.h>
 
 #include "axp-cfg.h"
-#include "axp18-mfd.h"
-#include "axp19-mfd.h"
+#include "axp15-mfd.h"
 #include "axp20-mfd.h"
 
 #include <mach/sys_config.h>
@@ -65,29 +64,22 @@ static irqreturn_t axp_mfd_irq_handler(int irq, void *data)
 
 static struct axp_mfd_chip_ops axp_mfd_ops[] = {
 	[0] = {
-		.init_chip    = axp18_init_chip,
-		.enable_irqs  = axp18_enable_irqs,
-		.disable_irqs = axp18_disable_irqs,
-		.read_irqs    = axp18_read_irqs,
-	},
-	[1] = {
-		.init_chip    = axp19_init_chip,
-		.enable_irqs  = axp19_enable_irqs,
-		.disable_irqs = axp19_disable_irqs,
-		.read_irqs    = axp19_read_irqs,
-	},
-	[2] = {
 		.init_chip    = axp20_init_chip,
 		.enable_irqs  = axp20_enable_irqs,
 		.disable_irqs = axp20_disable_irqs,
 		.read_irqs    = axp20_read_irqs,
 	},
+	[1] = {
+		.init_chip    = axp15_init_chip,
+		.enable_irqs  = axp15_enable_irqs,
+		.disable_irqs = axp15_disable_irqs,
+		.read_irqs    = axp15_read_irqs,
+	},
 };
 
 static const struct i2c_device_id axp_mfd_id_table[] = {
-	{ "axp18_mfd", 0 },
-	{ "axp19_mfd", 1 },
-	{ "axp20_mfd", 2 },
+	{ "axp20_mfd", 0 },
+	{ "axp15_mfd", 1 },
 	{},
 };
 MODULE_DEVICE_TABLE(i2c, axp_mfd_id_table);
@@ -95,40 +87,30 @@ MODULE_DEVICE_TABLE(i2c, axp_mfd_id_table);
 int axp_mfd_create_attrs(struct axp_mfd_chip *chip)
 {
 	int j,ret;
-	if(chip->type ==  AXP19){
-		for (j = 0; j < ARRAY_SIZE(axp19_mfd_attrs); j++) {
-			ret = device_create_file(chip->dev,&axp19_mfd_attrs[j]);
-			if (ret)
-				goto sysfs_failed;
-		}
-	}
-	else if (chip->type ==  AXP18){
-		for (j = 0; j < ARRAY_SIZE(axp18_mfd_attrs); j++) {
-			ret = device_create_file(chip->dev,&axp18_mfd_attrs[j]);
-			if (ret)
-			goto sysfs_failed2;
-		}
-	}
-	else if (chip->type ==  AXP20){
+
+	if (chip->type ==  AXP20){
 		for (j = 0; j < ARRAY_SIZE(axp20_mfd_attrs); j++) {
 			ret = device_create_file(chip->dev,&axp20_mfd_attrs[j]);
 			if (ret)
-			goto sysfs_failed3;
+			goto sysfs_failed1;
+		}
+	}
+	else if(chip->type ==  AXP15){
+		for (j = 0; j < ARRAY_SIZE(axp15_mfd_attrs); j++) {
+			ret = device_create_file(chip->dev,&axp15_mfd_attrs[j]);
+			if (ret)
+				goto sysfs_failed0;
 		}
 	}
 	else
 		ret = 0;
 	goto succeed;
 
-sysfs_failed:
+sysfs_failed0:
 	while (j--)
-		device_remove_file(chip->dev,&axp19_mfd_attrs[j]);
-	goto succeed;
-sysfs_failed2:
-	while (j--)
-		device_remove_file(chip->dev,&axp18_mfd_attrs[j]);
-	goto succeed;
-sysfs_failed3:
+		device_remove_file(chip->dev,&axp15_mfd_attrs[j]);
+		goto succeed;
+sysfs_failed1:
 	while (j--)
 		device_remove_file(chip->dev,&axp20_mfd_attrs[j]);
 succeed:
@@ -201,12 +183,8 @@ static void axp_power_off(void)
 {
 	uint8_t val;
 
-#if defined (CONFIG_AW_AXP18)
-	axp_set_bits(&axp->dev, POWER18_ONOFF, 0x80);
-#endif
-
-#if defined (CONFIG_AW_AXP19)
-	axp_set_bits(&axp->dev, POWER19_OFF_CTL, 0x80);
+#if defined (CONFIG_AW_AXP15)
+	axp_set_bits(&axp->dev, POWER15_OFF_CTL , 0x80);
 #endif
 
 #if defined (CONFIG_AW_AXP20)
@@ -253,8 +231,7 @@ static void axp_power_off(void)
     printk("[axp] send power-off command!\n");
     mdelay(20);
     if(power_start != 1){
-	    axp_write(&axp->dev, POWER20_INTSTS3, 0x03);
-        axp_read(&axp->dev, POWER20_STATUS, &val);
+		axp_read(&axp->dev, POWER20_STATUS, &val);
 		if(val & 0xF0){
 	    	axp_read(&axp->dev, POWER20_MODE_CHGSTATUS, &val);
 	    	if(val & 0x20){
@@ -268,13 +245,7 @@ static void axp_power_off(void)
 		}
 	}
     axp_write(&axp->dev, POWER20_DATA_BUFFERC, 0x00);
-    //axp_write(&axp->dev, 0xf4, 0x06);
-    //axp_write(&axp->dev, 0xf2, 0x04);
-    //axp_write(&axp->dev, 0xff, 0x01);
-    //axp_write(&axp->dev, 0x04, 0x01);
-    //axp_clr_bits(&axp->dev, 0x03, 0xc0);
-    //axp_write(&axp->dev, 0xff, 0x00);
-    //mdelay(20);
+    mdelay(20);
 	axp_set_bits(&axp->dev, POWER20_OFF_CTL, 0x80);
     mdelay(20);
     printk("[axp] warning!!! axp can't power-off, maybe some error happend!\n");

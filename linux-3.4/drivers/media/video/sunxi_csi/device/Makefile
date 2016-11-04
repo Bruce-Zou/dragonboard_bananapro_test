@@ -19,3 +19,4 @@ obj-$(CONFIG_CSI_S5K4EC)                            += s5k4ec.o
 obj-$(CONFIG_CSI_OV2643)					+= ov2643.o
 obj-$(CONFIG_CSI_OV2655)					+= ov2655.o
 obj-$(CONFIG_CSI_OV5640)					+= ov5640.o
+obj-$(CONFIG_CSI_OV7670)					+= ov7670.o

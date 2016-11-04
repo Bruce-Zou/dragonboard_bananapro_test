@@ -211,7 +211,8 @@ static struct attribute_group hdmi_attribute_group = {
 
 int __init hdmi_module_init(void)
 {
-    int ret = 0, err;
+    printk(KERN_ERR "[hdmi]hdmi module init\n");
+	int ret = 0, err;
     script_item_u   val;
     script_item_value_type_e  type;
     __u32 hdcp_en = 0;

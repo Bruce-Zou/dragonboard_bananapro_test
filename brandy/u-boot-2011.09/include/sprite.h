@@ -25,7 +25,6 @@
 #ifndef __SPRITE_SYS_H
 #define __SPRITE_SYS_H
 
-extern int sunxi_card_probe_mmc0_boot(void);
 extern int sunxi_card_sprite_main(int workmode, char *name);
 
 extern int sunxi_sprite_download_mbr(void *buffer, uint buffer_size);
@@ -38,8 +37,6 @@ extern uint add_sum(void *buffer, uint length);
 extern int sunxi_sprite_verify_mbr(void *buffer);
 extern uint sunxi_sprite_part_rawdata_verify(uint base_start, long long base_bytes);
 
-extern int sprite_form_sysrecovery(void);
-extern int sprite_led_init(void);
-extern int sprite_led_exit(int status);
+
 
 #endif /* __SPRITE_SYS_H */

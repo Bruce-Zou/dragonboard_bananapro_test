@@ -52,7 +52,7 @@ int do_reset(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	debug("disable interrupts\n");
 	reset_cpu(0);
 #else
-	sunxi_board_restart(0);
+	sunxi_board_restart();
 #endif
 	/*NOTREACHED*/
 	return 0;

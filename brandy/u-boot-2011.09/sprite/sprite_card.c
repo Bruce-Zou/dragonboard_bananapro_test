@@ -1030,155 +1030,6 @@ int card_download_standard_mbr(void *buffer)
 
 	return 0;
 }
-/*
-************************************************************************************************************
-*
-*                                             function
-*
-*    name          :
-*
-*    parmeters     :
-*
-*    return        :
-*
-*    note          :
-*
-*
-************************************************************************************************************
-*/
-#define CARD_ERASE_BLOCK_BYTES    (8 * 1024 * 1024)
-#define CARD_ERASE_BLOCK_SECTORS  (CARD_ERASE_BLOCK_BYTES/512)
-
-
-int card_erase(int erase, void *mbr_buffer)
-{
-	char *erase_buffer;
-	sunxi_mbr_t *mbr = (sunxi_mbr_t *)mbr_buffer;
-	int  i;
-
-	if(!erase)
-	{
-		return 0;
-	}
-	erase_buffer = (char *)malloc(CARD_ERASE_BLOCK_BYTES);
-	if(!erase_buffer)
-	{
-		printf("card erase fail: unable to malloc memory for card erase\n");
-
-		return -1;
-	}
-	memset(erase_buffer, 0, CARD_ERASE_BLOCK_BYTES);
-
-	for(i=1;i<mbr->PartCount;i++)
-	{
-		if(!sunxi_sprite_write(mbr->array[i].addrlo, CARD_ERASE_BLOCK_SECTORS, erase_buffer))
-		{
-			printf("card erase fail in erasing part %s\n", mbr->array[i].name);
-			free(erase_buffer);
-
-			return -1;
-		}
-		printf("erase from sector 0x%x to 0x%x\n", mbr->array[i].addrlo, mbr->array[i].addrlo + CARD_ERASE_BLOCK_SECTORS);
-	}
-	printf("card erase all\n");
-	free(erase_buffer);
-
-	return 0;
-}
-/*
-************************************************************************************************************
-*
-*                                             function
-*
-*    name          :
-*
-*    parmeters     :
-*
-*    return        :
-*
-*    note          :
-*
-*
-************************************************************************************************************
-*/
-#if defined(CONFIG_ARCH_SUN8IW1P1)
-
-#define  BOOT0_MAX_SIZE   (32 * 1024)
-
-int sunxi_card_probe_mmc0_boot(void)
-{
-	char  buffer[BOOT0_MAX_SIZE];
-	boot0_file_head_t  *boot0_head;
-	uint src_sum, cal_sum;
-	struct mmc *mmc0;
-	char  debug_info[1024];
-
-	puts("probe mmc0 if exist\n");
-	memset(debug_info, 0, 1024);
-	board_mmc_pre_init(0);
-	mmc0 = find_mmc_device(0);
-	if(!mmc0)
-	{
-		strcpy(debug_info, "fail to find mmc0");
-
-		goto __sunxi_card_probe_mmc0_boot_exit;
-	}
-	debug("try to init mmc0\n");
-	if (mmc_init(mmc0))
-	{
-		strcpy(debug_info, "MMC0 init failed");
-
-		goto __sunxi_card_probe_mmc0_boot_exit;
-	}
-	memset(buffer, 0, BOOT0_MAX_SIZE);
-
-	if(mmc0->block_dev.block_read_mass_pro(mmc0->block_dev.dev, 16, BOOT0_MAX_SIZE/512, buffer) != BOOT0_MAX_SIZE/512)
-	{
-		strcpy(debug_info, "read mmc boot0 failed");
-
-		goto __sunxi_card_probe_mmc0_boot_exit;
-	}
-	//reset uart gpio
-	gpio_request_simple("uart_para", NULL);
-	//reset jtag
-	gpio_request_simple("jtag_para", NULL);
-	//compare data
-	boot0_head = (boot0_file_head_t *)buffer;
-	printf("boot0 magic = %s\n", boot0_head->boot_head.magic);
-	if(strncmp((const char *)boot0_head->boot_head.magic, BOOT0_MAGIC, 8))
-	{
-		puts("boot0 magic invalid\n");
-
-		return 0;
-	}
-
-	src_sum = boot0_head->boot_head.check_sum;
-	boot0_head->boot_head.check_sum = STAMP_VALUE;
-	cal_sum = add_sum(buffer, boot0_head->boot_head.length);
-	if(src_sum != cal_sum)
-	{
-		puts("boot0 addsum error\n");
-
-		return 0;
-	}
-
-	sunxi_board_run_fel();
-
-	return 0;
-
-__sunxi_card_probe_mmc0_boot_exit:
-	//reset uart gpio
-	gpio_request_simple("uart_para", NULL);
-	//reset jtag
-	gpio_request_simple("jtag_para", NULL);
-
-	printf("%s\n", debug_info);
-
-	return 0;
-}
-#endif
-
-
 
 /*
 ************************************************************************************************************
@@ -1286,7 +1137,6 @@ __sunxi_sprite_deal_part_err2:
     return ret;
 }
 
-
 /*
 ************************************************************************************************************
 *
@@ -1313,3 +1163,58 @@ int __imagehd(HIMAGE tmp_himage)
 	return -1;
 }
 
+/*
+************************************************************************************************************
+*
+*                                             function
+*
+*    name          :
+*
+*    parmeters     :
+*
+*    return        :
+*
+*    note          :
+*
+*
+************************************************************************************************************
+*/
+#define CARD_ERASE_BLOCK_BYTES    (8 * 1024 * 1024)
+#define CARD_ERASE_BLOCK_SECTORS  (CARD_ERASE_BLOCK_BYTES/512)
+
+
+int card_erase(int erase, void *mbr_buffer)
+{
+	char *erase_buffer;
+	sunxi_mbr_t *mbr = (sunxi_mbr_t *)mbr_buffer;
+	int  i;
+
+	if(!erase)
+	{
+		return 0;
+	}
+	erase_buffer = (char *)malloc(CARD_ERASE_BLOCK_BYTES);
+	if(!erase_buffer)
+	{
+		printf("card erase fail: unable to malloc memory for card erase\n");
+
+		return -1;
+	}
+	memset(erase_buffer, 0, CARD_ERASE_BLOCK_BYTES);
+
+	for(i=1;i<mbr->PartCount;i++)
+	{
+		if(!sunxi_sprite_write(mbr->array[i].addrlo, CARD_ERASE_BLOCK_SECTORS, erase_buffer))
+		{
+			printf("card erase fail in erasing part %s\n", mbr->array[i].name);
+			free(erase_buffer);
+
+			return -1;
+		}
+		printf("erase from sector 0x%x to 0x%x\n", mbr->array[i].addrlo, mbr->array[i].addrlo + CARD_ERASE_BLOCK_SECTORS);
+	}
+	printf("card erase all\n");
+	free(erase_buffer);
+
+	return 0;
+}

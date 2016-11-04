@@ -73,7 +73,7 @@
 #define DRAM_CCM_GPS_CLK_REG            (DRAM_CCM_BASE + 0xd0)
 #define DRAM_CCM_SDRAM_CLK_REG          (DRAM_CCM_BASE + 0x100)
 #define DRAM_CCM_MUS_CLK_REG          	(DRAM_CCM_BASE + 0x15c)
-#define DRAM_CCM_SDRAM_PLL_TUN2          (DRAM_CCM_BASE + 0x3c)
+
 
 //SS register for system
 #define DRAM_SS_BASE    				0x01c15000

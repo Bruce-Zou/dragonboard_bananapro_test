@@ -31,7 +31,6 @@
 static char mbr_buf[SUNXI_MBR_SIZE];
 static int  mbr_status;
 
-DECLARE_GLOBAL_DATA_PTR;
 
 int sunxi_partition_get_total_num(void)
 {
@@ -151,32 +150,6 @@ int sunxi_partition_get_info_byname(const char *part_name, uint *part_offset, ui
 	return -1;
 }
 
-void *sunxi_partition_fetch_mbr(void)
-{
-	if(!mbr_status)
-	{
-		return NULL;
-	}
-
-	return mbr_buf;
-}
-
-int sunxi_partition_refresh(void *buf, uint bytes)
-{
-	if(!mbr_status)
-	{
-		return -1;
-	}
-	if(bytes != SUNXI_MBR_SIZE)
-	{
-		return -1;
-	}
-
-	memcpy(mbr_buf, buf, bytes);
-
-	return 0;
-}
-
 int sunxi_partition_init(void)
 {
     sunxi_mbr_t    *mbr;
@@ -197,7 +170,6 @@ int sunxi_partition_init(void)
         {
 			debug("mbr part count = %d\n", mbr->PartCount);
 			mbr_status = 1;
-			gd->lockflag = mbr->lockflag;
 
             return mbr->PartCount;
         }

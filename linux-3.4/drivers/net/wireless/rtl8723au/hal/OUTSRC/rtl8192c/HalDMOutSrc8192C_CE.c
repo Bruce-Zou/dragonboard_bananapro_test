@@ -583,7 +583,7 @@ odm_CheckTXPowerTracking_ThermalMeter(
 	{
 		//pHalData->TxPowerCheckCnt++;	//cosa add for debug
 		PHY_SetRFReg(Adapter, RF_PATH_A, RF_T_METER, bRFRegOffsetMask, 0x60);
-		//DBG_8192C("Trigger 92C Thermal Meter!!\n");
+		DBG_8192C("Trigger 92C Thermal Meter!!\n");
 		
 		pdmpriv->TM_Trigger = 1;
 		return;
@@ -591,7 +591,7 @@ odm_CheckTXPowerTracking_ThermalMeter(
 	}
 	else
 	{
-		//DBG_8192C("Schedule TxPowerTracking direct call!!\n");
+		DBG_8192C("Schedule TxPowerTracking direct call!!\n");
 		ODM_TXPowerTracking92CDirectCall(Adapter); //Using direct call is instead, added by Roger, 2009.06.18.
 		pdmpriv->TM_Trigger = 0;
 	}

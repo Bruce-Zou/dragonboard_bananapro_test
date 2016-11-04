@@ -331,7 +331,7 @@ int sprite_form_sysrecovery(void)
 		free(src_buf);
 	}
 	//处理烧写完成后重启
-	sunxi_board_restart(0);
+	sunxi_board_restart();
 	return 0;
 	
 _update_error_:

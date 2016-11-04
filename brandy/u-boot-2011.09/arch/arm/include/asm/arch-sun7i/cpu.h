@@ -34,7 +34,7 @@
 #if 0
 #define SUNXI_SRAM_NAND_BASE		0Xdeaddead		/* 2k(address not available on spec) */
 #endif
-#define SUNXI_SRAM_D_BASE			0X01C00000		/* 4k */
+#define SUNXI_SRAM_D_BASE			0X00100000		/* 4k */
 #define SUNXI_SRAM_B_BASE			0X00200000		/* 64k(secure) */
 #define SUNXI_SRAMC_BASE			0X01C00000		/* 4k */
 #define SUNXI_DRAMC_BASE			0X01C01000		/* 4k */

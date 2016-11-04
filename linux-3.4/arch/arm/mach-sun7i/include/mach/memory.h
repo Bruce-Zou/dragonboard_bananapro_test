@@ -38,8 +38,8 @@
 #define SW_VE_MEM_BASE                 (PLAT_PHYS_OFFSET + SZ_64M)
 
 #define HW_RESERVED_MEM_BASE           (SW_VE_MEM_BASE)    
-#define HW_RESERVED_MEM_SIZE_1G        (0x06000000 + 0x01400000)   		/* 116M(DE+VE(CSI)+FB) */
-#define HW_RESERVED_MEM_SIZE_512M      (0x04000000 + 0x01000000)   		/* 80M(DE+VE(CSI)+FB) */
+#define HW_RESERVED_MEM_SIZE_1G        (0x08000000 + 0x01400000)   		/* 116M(DE+VE(CSI)+FB) */
+#define HW_RESERVED_MEM_SIZE_512M      (0x04000000 + 0x02200000)   		/* 80M(DE+VE(CSI)+FB) */
 
 #define SW_GPU_MEM_BASE                (HW_RESERVED_MEM_BASE + HW_RESERVED_MEM_SIZE_1G)
 #define SW_GPU_MEM_SIZE_1G             0x04000000 /* SZ_64M */
@@ -49,7 +49,8 @@
 #define SW_G2D_MEM_SIZE                0 
 
 #if defined(CONFIG_ION) || defined(CONFIG_ION_MODULE)
-#define ION_CARVEOUT_MEM_BASE          (SW_VE_MEM_BASE) 
-#define ION_CARVEOUT_MEM_SIZE_DEFAULT  (128 * SZ_1M)  /* in Mbytes */
+#define ION_CARVEOUT_MEM_BASE          (SUPER_STANDBY_BASE + SUPER_STANDBY_SIZE) /* +332M */
+#define ION_CARVEOUT_MEM_SIZE          (CONFIG_ION_SUNXI_CARVEOUT_SIZE * SZ_1M)  /* in Mbytes */
 #endif
+
 #endif

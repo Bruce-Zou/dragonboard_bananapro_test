@@ -59,6 +59,7 @@ __u32 hdmi_ishdcp(void);
 __s32 hdmi_core_initial(void);
 __s32 hdmi_core_open(void);
 __s32 hdmi_core_close(void);
+__s32 hdmi_core_video_en(__u32 enable);
 __s32 hdmi_main_task_loop(void);
 __s32 Hpd_Check(void);
 __s32 ParseEDID(void);

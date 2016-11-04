@@ -81,7 +81,6 @@ typedef struct _ADAPTER _adapter, ADAPTER,*PADAPTER;
 #include <rtw_p2p.h>
 #include <rtw_tdls.h>
 #include <rtw_ap.h>
-#include <rtw_odm.h>
 
 #ifdef CONFIG_WAPI_SUPPORT
 #include <rtw_wapi.h>
@@ -235,7 +234,7 @@ struct registry_priv
 #define BSSID_OFT(field) ((ULONG)FIELD_OFFSET(WLAN_BSSID_EX,field))
 #define BSSID_SZ(field)   sizeof(((PWLAN_BSSID_EX) 0)->field)
 
-
+#define MAX_CONTINUAL_URB_ERR 4
 
 #ifdef CONFIG_SDIO_HCI
 #include <drv_types_sdio.h>
@@ -267,8 +266,6 @@ struct dvobj_priv
 {
 	_adapter *if1; //PRIMARY_ADAPTER
 	_adapter *if2; //SECONDARY_ADAPTER
-	
-	s32	processing_dev_remove;
 
 	//for local/global synchronization
 	_mutex hw_init_mutex;
@@ -294,9 +291,6 @@ struct dvobj_priv
 	u8	Queue2Pipe[HW_QUEUE_ENTRY];//for out pipe mapping
 
 	u8	irq_alloc;
-	ATOMIC_T continual_io_error;
-
-	struct pwrctrl_priv pwrctl_priv;
 
 /*-------- below is for SDIO INTERFACE --------*/
 
@@ -361,7 +355,7 @@ struct dvobj_priv
 	struct usb_interface *pusbintf;
 	struct usb_device *pusbdev;
 #endif//PLATFORM_FREEBSD
-	
+	ATOMIC_T continual_urb_error;
 #endif//CONFIG_USB_HCI
 
 /*-------- below is for PCIE INTERFACE --------*/
@@ -402,9 +396,6 @@ struct dvobj_priv
 
 #endif//CONFIG_PCI_HCI
 };
-
-#define dvobj_to_pwrctl(dvobj) (&(dvobj->pwrctl_priv))
-#define pwrctl_to_dvobj(pwrctl) container_of(pwrctl, struct dvobj_priv, pwrctl_priv)
 
 #ifdef PLATFORM_LINUX
 static struct device *dvobj_to_dev(struct dvobj_priv *dvobj)
@@ -496,6 +487,7 @@ struct _ADAPTER{
 	struct	security_priv	securitypriv;
 	_lock   security_key_mutex; // add for CONFIG_IEEE80211W, none 11w also can use
 	struct	registry_priv	registrypriv;
+	struct	pwrctrl_priv	pwrctrlpriv;
 	struct 	eeprom_priv eeprompriv;
 	struct	led_priv	ledpriv;
 #if defined(CONFIG_CHECK_BT_HANG) && defined(CONFIG_BT_COEXIST)	
@@ -595,7 +587,6 @@ struct _ADAPTER{
 	struct net_device_stats stats;
 	struct iw_statistics iwstats;
 	struct proc_dir_entry *dir_dev;// for proc directory
-	struct proc_dir_entry *dir_odm;
 
 #ifdef CONFIG_IOCTL_CFG80211
 	struct wireless_dev *rtw_wdev;
@@ -681,7 +672,6 @@ struct _ADAPTER{
 };
 
 #define adapter_to_dvobj(adapter) (adapter->dvobj)
-#define adapter_to_pwrctl(adapter) (&(adapter->dvobj->pwrctl_priv))
 
 int rtw_handle_dualmac(_adapter *adapter, bool init);
 

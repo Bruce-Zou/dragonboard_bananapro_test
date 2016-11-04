@@ -82,8 +82,6 @@ void print_usb_reg_by_ep(spinlock_t *lock, __u32 usbc_base, __s32 ep_index, char
     DMSG_INFO("USBC_REG_o_RXINTERVAL    = 0x%x\n", USBC_Readb(usbc_base + USBC_REG_o_RXINTERVAL));
     DMSG_INFO("USBC_REG_o_CONFIGDATA    = 0x%x\n", USBC_Readb(usbc_base + USBC_REG_o_CONFIGDATA));
 
-    DMSG_INFO("USBC_REG_o_EPFIFOx(%d)   = 0x%x\n", ep_index, USBC_Readb(usbc_base + USBC_REG_o_EPFIFOx(ep_index)));
-
     DMSG_INFO("USBC_REG_o_DEVCTL        = 0x%x\n", USBC_Readb(usbc_base + USBC_REG_o_DEVCTL));
     DMSG_INFO("USBC_REG_o_TXFIFOSZ      = 0x%x\n", USBC_Readb(usbc_base + USBC_REG_o_TXFIFOSZ));
     DMSG_INFO("USBC_REG_o_RXFIFOSZ      = 0x%x\n", USBC_Readb(usbc_base + USBC_REG_o_RXFIFOSZ));

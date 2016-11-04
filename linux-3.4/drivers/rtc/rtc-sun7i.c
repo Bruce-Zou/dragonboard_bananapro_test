@@ -19,6 +19,7 @@
 #include <linux/platform_device.h>
 #include <linux/interrupt.h>
 #include <linux/rtc.h>
+#include <linux/i2c.h>
 #include <linux/bcd.h>
 #include <linux/clk.h>
 #include <linux/log2.h>
@@ -148,13 +149,71 @@ static struct platform_driver sunxi_rtc_driver = {
 		.name	= "sunxi-rtc",
 		.owner	= THIS_MODULE,
 	},
-    .suspend        =  sunxi_rtc_suspend,
-    .resume         =  sunxi_rtc_resume,
+	.suspend        =  sunxi_rtc_suspend,
+	.resume         =  sunxi_rtc_resume,
 };
+
+static int i2c_write_reg(struct i2c_adapter *adapter, u8 adr,
+			 u8 reg, u8 data)
+{
+	u8 m[2] = {reg, data};
+	struct i2c_msg msg = {.addr = adr, .flags = 0, .buf = m, .len = 2};
+
+	if (i2c_transfer(adapter, &msg, 1) != 1) {
+		printk(KERN_ERR "Failed to write to I2C register %02x@%02x!\n",
+		       reg, adr);
+		return -1;
+	}
+	return 0;
+}
+
+static int i2c_read_reg(struct i2c_adapter *adapter, u8 adr,
+			u8 reg, u8 *val)
+{
+	struct i2c_msg msgs[2] = {{.addr = adr, .flags = 0,
+				   .buf = &reg, .len = 1},
+				  {.addr = adr, .flags = I2C_M_RD,
+				   .buf = val, .len = 1} };
+
+	if (i2c_transfer(adapter, msgs, 2) != 2) {
+		printk(KERN_ERR "error in i2c_read_reg\n");
+		return -1;
+	}
+	return 0;
+}
+
+
+script_item_u rtc_used;
 
 static int __init sunxi_rtc_init(void)
 {
-	pr_info("%s: enter\n", __func__);
+	struct i2c_adapter *adap = NULL;
+	u8 addr = 0x34;
+	u8 val = 0;
+	u8 data = (1<<7)|(1<<5)|2;
+	script_item_value_type_e type;
+
+	pr_info("rtc init\n");
+
+	rtc_used.val = 0;
+	type = script_get_item("pmu_para", "pmu_backupen", &rtc_used);
+	if (SCIRPT_ITEM_VALUE_TYPE_INT == type) {
+		if (rtc_used.val == 1) {
+			adap = i2c_get_adapter(0);
+			if (adap != NULL) {
+				i2c_read_reg(adap, addr, 0x35, &val);
+				pr_debug("var: %x\n", val);
+				pr_info("rtc: enable pmu backup\n");
+				i2c_write_reg(adap, addr, 0x35, data);
+				i2c_read_reg(adap, addr, 0x35, &val);
+				pr_debug("var: %x\n", val);
+
+				pr_debug("release i2c adapter0\n");
+				i2c_put_adapter(adap);
+			}
+		}
+	}
+
 	platform_device_register(&sunxi_device_rtc);
 	return platform_driver_register(&sunxi_rtc_driver);
 }

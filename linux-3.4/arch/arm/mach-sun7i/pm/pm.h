@@ -199,7 +199,6 @@ extern void save_mmu_state(struct mmu_state *saved_mmu_state);
 extern void restore_mmu_state(struct mmu_state *saved_mmu_state);
 void set_ttbr0(void);
 extern void invalidate_dcache(void);
-int fetch_dram_para(standy_dram_para_t *pstandby_dram_para);
 
 #endif /*_PM_H*/
 

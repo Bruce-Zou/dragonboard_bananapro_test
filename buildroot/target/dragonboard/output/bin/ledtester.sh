@@ -23,22 +23,73 @@ if [ -z "$tmp_pin0" ]; then
 else
 	tmp=${tmp_pin0%%<*}
 	led_pin0=${tmp#*:}
-
-	tmp=${tmp_pin1%%<*}
-	led_pin1=${tmp#*:}
 fi
 
+if [ -z "$tmp_pin1" ]; then
+        echo "led_pin1 not config"
+        SEND_CMD_PIPE_FAIL $3
+    exit 1    
+else 
+        tmp=${tmp_pin1%%<*}
+        led_pin1=${tmp#*:}
+fi
+
+
+
+#if [ -z "$module_path" ]; then
+#    echo "no gpio-sunxi.ko to install"
+#    SEND_CMD_PIPE_FAIL $3
+#    exit 1
+#else
+#	echo "begin intall gpio-sunxi.ko"
+#    insmod "$module_path"
+#    if [ $? -ne 0 ]; then
+#        SEND_CMD_PIPE_FAIL $3
+#        exit 1
+#    fi
+#fi
+
+if [ ! -d "/sys/class/gpio_sw/$led_pini0" ]; then
+	echo "mabey cant intall gpio-sunxi.ko"
+	SEND_CMD_PIPE_FAIL $3
+    exit 1
+else
 	pin_data0="/sys/class/gpio_sw/"${led_pin0}"/data"
-	pin_data1="/sys/class/gpio_sw/"${led_pin1}"/data"
+fi
+
+if [ ! -d "/sys/class/gpio_sw/$led_pin1" ]; then
+        echo "mabey cant intall gpio-sunxi.ko"
+        SEND_CMD_PIPE_FAIL $3
+    exit 1
+else
+        pin_data1="/sys/class/gpio_sw/"${led_pin1}"/data"
+fi
 
 
 while true ; do
 	echo 1 > $pin_data0
-	echo 1 > $pin_data1
+	if [ $? -ne 0 ]; then
+		SEND_CMD_PIPE_FAIL $3
+		exit 1
+	fi
+        echo 1 > $pin_data1
+        if [ $? -ne 0 ]; then
+                SEND_CMD_PIPE_FAIL $3
+                exit 1
+        fi
 	usleep 200000
 
 	echo 0 > $pin_data0
-	echo 0 > $pin_data1
+	if [ $? -ne 0 ]; then
+		SEND_CMD_PIPE_FAIL $3
+		exit 1
+	fi
+
+        echo 0 > $pin_data1
+        if [ $? -ne 0 ]; then
+                SEND_CMD_PIPE_FAIL $3
+                exit 1
+        fi
 
 	SEND_CMD_PIPE_OK $3
 	usleep 200000

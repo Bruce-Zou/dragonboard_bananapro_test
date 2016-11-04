@@ -13,6 +13,6 @@ obj-$(CONFIG_SW_TOUCHSCREEN_GT811)      += gt811.o
 obj-$(CONFIG_SW_TOUCHSCREEN_GT9XX)      += gt9xx/
 obj-$(CONFIG_SW_TOUCHSCREEN_FT5X)       += ft5x/
 obj-$(CONFIG_TOUCHSCREEN_AW5306)        += aw5306_ts.o
-aw5306_ts-objs := AW5306_ts.o AW5306_userpara.o $@libAW5306
+aw5306_ts-objs := AW5306_ts.o AW5306_userpara.o $@libAW5306.a
 obj-$(CONFIG_TOUCHSCREEN_ILITEK)        += ilitek_ts.o
 

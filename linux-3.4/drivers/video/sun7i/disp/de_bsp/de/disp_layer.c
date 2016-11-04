@@ -422,7 +422,7 @@ __s32 BSP_disp_layer_release(__u32 sel, __u32 hid)
                 image_clk_off(1-sel, 0);
                 gdisp.screen[1-sel].image_output_type = 0;
             }
-            Scaler_Release(layer_man->scaler_index, TRUE);      /*release a scaler object */
+            Scaler_Release(layer_man->scaler_index, FALSE);      /*release a scaler object */
         }
         else
         {
@@ -508,6 +508,21 @@ __s32 BSP_disp_layer_close(__u32 sel, __u32 hid)
         DE_WRN("layer %d in screen %d not inited!\n", hid, sel);
         return DIS_OBJ_NOT_INITED;
     }
+}
+
+__s32 BSP_disp_layer_is_open(__u32 screen_id, __u32 hid)
+{
+	__layer_man_t * layer_man;
+
+	hid = HANDTOID(hid);
+	HLID_ASSERT(hid, gdisp.screen[screen_id].max_layers);
+
+	layer_man = &gdisp.screen[screen_id].layer_manage[hid];
+	if((layer_man->status & LAYER_USED) && (layer_man->status & LAYER_OPENED)) {
+		return 1;
+	}	else {
+		return 0;
+	}
 }
 
 __s32 BSP_disp_layer_set_framebuffer(__u32 sel, __u32 hid, __disp_fb_t * pfb)//keep the src window offset x/y

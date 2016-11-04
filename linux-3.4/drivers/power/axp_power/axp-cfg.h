@@ -1,13 +1,17 @@
 #ifndef __LINUX_AXP_CFG_H_
 #define __LINUX_AXP_CFG_H_
 
+#define	AXP15_ADDR			0x60 >> 1
 #define	AXP18_ADDR			0x2C >> 1
 #define AXP19_ADDR			0x68 >> 1
 #define AXP20_ADDR			0x68 >> 1
+
+#define	AXP15_I2CBUS		0
 #define	AXP18_I2CBUS		1
 #define	AXP19_I2CBUS		0
 #define	AXP20_I2CBUS		0
 #define BATRDC				200 //initial rdc
+#define AXP15_IRQNO         0
 #define AXP20_IRQNO     32
 
 
@@ -15,6 +19,7 @@
 #define	DC2SET				1  //0: DC2SET connect GND, 1: DC2SET connect IPSOUT, for axp189 DC2SET bonding to IPSOUT
 #define	DC3SET				1  //0:DC3SET connect GND, 1:DC3SET connect IPSOUT ,for axp189 DC3SET to pin
 
+#define AXP15LDO1			  1300
 #define AXP19LDO1			1250
 #define AXP20LDO1			  1300
 
@@ -47,6 +52,18 @@
 	#define  LDO3MAX		2600
 #endif
 
+#if DC3SET
+	#define DCDC4MIN		2000
+	#define DCDC4MAX		2700
+	#define  LDO4MIN		1600
+	#define  LDO4MAX		1900
+#else
+	#define DCDC4MIN		1300
+	#define DCDC4MAX		1900
+	#define  LDO4MIN		2300
+	#define  LDO4MAX		2600
+#endif
+
 #define AXP18_VOL_MAX		50//1200
 #define AXP18_TIME_MAX		20//100
 #define AXP18_RDC_COUNT		10
@@ -59,6 +76,12 @@
 #define AXP19_TIME_MAX		20
 #define AXP19_AVER_MAX		10
 #define AXP19_RDC_COUNT		10
+
+/*check by spec*/
+#define AXP15_VOL_MAX		50
+#define AXP15_TIME_MAX		20
+#define AXP15_AVER_MAX		10
+#define AXP15_RDC_COUNT		10
 
 #define AXP20_VOL_MAX			12 // capability buffer length
 #define AXP20_TIME_MAX		20

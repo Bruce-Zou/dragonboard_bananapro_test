@@ -6,6 +6,7 @@
 #include "disp_lcd.h"
 #include "disp_clk.h"
 
+__bool hdmi_request_close_flag = 0;
 
 __s32 Display_Hdmi_Init(void)
 {
@@ -48,7 +49,7 @@ __s32 BSP_disp_hdmi_open(__u32 sel)
         lcdc_clk_on(sel, 1, 1);
         Disp_lcdc_reg_isr(sel);
         LCDC_init(sel);
-        //image_clk_on(sel, 0);
+        image_clk_on(sel, 0);
         image_clk_on(sel, 1);
         Image_open(sel);//set image normal channel start bit , because every de_clk_off( )will reset this bit
         DE_BE_EnableINT(sel, DE_IMG_REG_LOAD_FINISH);
@@ -114,17 +115,18 @@ __s32 BSP_disp_hdmi_open(__u32 sel)
 __s32 BSP_disp_hdmi_close(__u32 sel)
 {
     if(gdisp.screen[sel].status & HDMI_ON)
-    {            
-        if(gdisp.init_para.hdmi_close)
-        {
-            gdisp.init_para.hdmi_close();
-        }
-        else
-        {
-            DE_WRN("hdmi_close is NULL\n");
-            return -1;
-        }
-        tcon1_close(sel);
+    {
+        __u32 count = 50000;
+        hdmi_request_close_flag = 1; // 1:request close,0:need not to close.
+        while((count--) && hdmi_request_close_flag)
+                udelay(1);
+        if(hdmi_request_close_flag || count <= 0) {
+			if(gdisp.init_para.hdmi_close){
+					gdisp.init_para.hdmi_close();
+				}
+			DE_INF("hdmi wait vb_int timeout\n");
+		}
+		tcon1_close(sel);
         image_clk_off(sel, 1);
         lcdc_clk_off(sel);
         //hdmi_clk_off();

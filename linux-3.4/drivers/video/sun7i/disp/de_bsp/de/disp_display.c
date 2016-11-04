@@ -67,7 +67,6 @@ __s32 BSP_disp_init(__disp_bsp_init_para * para)
     Disp_TVEC_Init(1);
     Display_Hdmi_Init();
     disp_video_init();
-    TVE_detect_init();
     
     return DIS_SUCCESS;
 }

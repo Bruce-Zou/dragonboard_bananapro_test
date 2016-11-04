@@ -157,10 +157,6 @@ int battery_charge_cartoon_rate(int rate)
 		{
 			flush_cache((uint)bat_bmp_store[rate].buffer, bat_bmp_store[rate].x * bat_bmp_store[rate].y * bat_bmp_store[rate].bit/4);
 			board_display_framebuffer_change(bat_bmp_store[rate].buffer);
-#ifdef CONFIG_ARCH_SUN9IW1P1
-			board_display_framebuffer_set(bat_bmp_store[rate].x, bat_bmp_store[rate].y, bat_bmp_store[rate].bit, bat_bmp_store[rate].buffer);
-			board_display_layer_para_set();
-#endif
 			pre_bat_cal = rate;
 		}
 	}
@@ -185,20 +181,12 @@ int battery_charge_cartoon_rate(int rate)
 */
 int battery_charge_cartoon_reset(void)
 {
-#ifndef CONFIG_ARCH_SUN9IW1P1
 	__disp_layer_info_t *layer_para;
 
 	layer_para = (__disp_layer_info_t *)gd->layer_para;
 
     layer_para->alpha_en = 1;
     layer_para->alpha_val = 255;
-#else
-		disp_layer_info *layer_para;
-
-		layer_para = (disp_layer_info *)gd->layer_para;
-
-		layer_para->alpha_value = 255;
-#endif
     __msdelay(50);
     board_display_layer_para_set();
 
@@ -223,7 +211,6 @@ int battery_charge_cartoon_reset(void)
 int battery_charge_cartoon_degrade(int alpha_step)
 {
 	int  alpha, delay_time;
-#ifndef CONFIG_ARCH_SUN9IW1P1
 	__disp_layer_info_t *layer_para;
 
 	layer_para = (__disp_layer_info_t *)gd->layer_para;
@@ -232,24 +219,12 @@ int battery_charge_cartoon_degrade(int alpha_step)
 	alpha = layer_para->alpha_val;
 
 	layer_para->alpha_en = 1;
-#else
-	disp_layer_info *layer_para;
-
-	layer_para = (disp_layer_info *)gd->layer_para;
-
-	delay_time = 50;
-	alpha = layer_para->alpha_value;
-#endif
 	alpha -= alpha_step;
 	if(alpha > 0)
 	{
 		board_display_layer_para_set();
 		__msdelay(delay_time);
-#ifndef CONFIG_ARCH_SUN9IW1P1
 		layer_para->alpha_val = alpha;
-#else
-		layer_para->alpha_value = alpha;
-#endif
 	}
 	else
 	{

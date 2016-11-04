@@ -93,7 +93,7 @@ static void sunxi_flush_allcaches(void)
 */
 void sunxi_board_close_source(void)
 {
-//	axp_set_vbus_limit_dc();
+	axp_set_vbus_limit_dc();
 
 	timer_exit();
 
@@ -103,7 +103,6 @@ void sunxi_board_close_source(void)
 #endif
 	sunxi_dma_exit();
 	sunxi_flash_exit(1);	//强制关闭FLASH
-	sunxi_sprite_exit(1);
 	disable_interrupts();
 	interrupt_exit();
 
@@ -129,14 +128,10 @@ void sunxi_board_close_source(void)
 *
 ************************************************************************************************************
 */
-int sunxi_board_restart(int next_mode)
+int sunxi_board_restart(void)
 {
-	if(!next_mode)
-	{
-		next_mode = PMU_PRE_SYS_MODE;
-	}
-	printf("set next mode %d\n", next_mode);
-	axp_set_next_poweron_status(next_mode);
+	printf("set next system normal\n");
+	axp_set_next_poweron_status(PMU_PRE_SYS_MODE);
 	board_display_set_exit_mode(0);
 	drv_disp_exit();
 	sunxi_board_close_source();
@@ -174,7 +169,6 @@ int sunxi_board_shutdown(void)
 	drv_disp_exit();
 
 	sunxi_flash_exit(1);	//强制关闭FLASH
-	sunxi_sprite_exit(1);
 	disable_interrupts();
 	interrupt_exit();
 
@@ -202,7 +196,7 @@ int sunxi_board_shutdown(void)
 */
 int sunxi_board_run_fel(void)
 {
-#if defined(CONFIG_SUN6I) || defined(CONFIG_ARCH_SUN8IW3P1) || defined(CONFIG_ARCH_SUN7I)
+#if defined(CONFIG_SUN6I) || defined(CONFIG_ARCH_SUN8IW3P1) || defined(CONFIG_ARCH_SUN7IW1P1)
 	*((volatile unsigned int *)(SUNXI_RUN_EFEX_ADDR)) = SUNXI_RUN_EFEX_FLAG;
 #endif
 	printf("set next system status\n");
@@ -241,7 +235,7 @@ int sunxi_board_run_fel(void)
 */
 int sunxi_board_run_fel_eraly(void)
 {
-#if defined(CONFIG_SUN6I) || defined(CONFIG_ARCH_SUN8IW3P1) || defined(CONFIG_ARCH_SUN7I)
+#if defined(CONFIG_SUN6I) || defined(CONFIG_ARCH_SUN8IW3P1) || defined(CONFIG_ARCH_SUN7IW1P1)
 	*((volatile unsigned int *)(SUNXI_RUN_EFEX_ADDR)) = SUNXI_RUN_EFEX_FLAG;
 #endif
 	printf("set next system status\n");
@@ -285,7 +279,7 @@ void sunxi_update_subsequent_processing(int next_work)
 		case SUNXI_UPDATE_NEXT_ACTION_REBOOT:	//重启
 			printf("SUNXI_UPDATE_NEXT_ACTION_REBOOT\n");
 			//do_reset(NULL, 0, 0, NULL);
-			sunxi_board_restart(0);
+			sunxi_board_restart();
 
 			break;
 		case SUNXI_UPDATE_NEXT_ACTION_SHUTDOWN:	//关机
@@ -584,24 +578,11 @@ int check_android_misc(void)
 		misc_offset = sunxi_partition_get_offset_byname("misc");
 		if(!misc_offset)
 		{
-			int pmu_value;
-
 			puts("no misc partition is found\n");
-			pmu_value = axp_probe_pre_sys_mode();
-			if(pmu_value == PMU_PRE_FASTBOOT_MODE)
-			{
-				puts("ready to enter fastboot mode\n");
-				setenv("bootcmd", "run boot_fastboot");
+			printf("to be run cmd=%s\n", boot_commond);
+			setenv("bootcmd", boot_commond);
 
-				return 0;
-			}
-			else
-			{
-				printf("to be run cmd=%s\n", boot_commond);
-				setenv("bootcmd", boot_commond);
-
-				return 0;
-			}
+			return 0;
 		}
 		memset(misc_fill, 0xff, 2048);
 #ifdef DEBUG
@@ -651,13 +632,7 @@ int check_android_misc(void)
 		return 0;
 	}
 
-	if(!strcmp(misc_message->command, "boot-resignature"))
-	{
-		puts("find boot-resignature cmd\n");
-		sunxi_flash_write(misc_offset, 2048/512, misc_fill);
-		sunxi_oem_op_lock(SUNXI_LOCKING, NULL, 1);
-	}
-	else if(!strcmp(misc_message->command, "boot-recovery"))
+	if(!strcmp(misc_message->command, "boot-recovery"))
 	{
 		puts("Recovery detected, will boot recovery\n");
 		sunxi_str_replace(boot_commond, "boot_normal", "boot_recovery");
@@ -667,8 +642,7 @@ int check_android_misc(void)
 	{
 		puts("Fastboot detected, will boot fastboot\n");
 		sunxi_str_replace(boot_commond, "boot_normal", "boot_fastboot");
-		if(misc_offset)
-			sunxi_flash_write(misc_offset, 2048/512, misc_fill);
+		sunxi_flash_write(misc_offset, 2048/512, misc_fill);
 	}
 
 	setenv("bootcmd", boot_commond);
@@ -839,7 +813,7 @@ int check_update_key(void)
 	    if(key_value < 0)             				//没有按键按下
 	    {
 	        printf("no key found\n");
-	        return 0;
+	        return -1;
 	    }
 	   gd->key_pressd_value = key_value;
 		ret = script_parser_fetch("fel_key", "fel_key_max", &fel_key_max, 1);
@@ -1011,14 +985,15 @@ int check_boot_recovery_key(void)
 {
 	user_gpio_set_t     gpio_recovery;
 	__u32			    gpio_hd;
-	int					gpio_value = 0;
+	int					gpio_value;
 	int ret;
-
+	
 	ret = script_parser_fetch("system", "recovery_key", (int *)&gpio_recovery, sizeof(user_gpio_set_t)/4);
-        if (!ret)
+	if (!ret)
 	{
 		gpio_recovery.mul_sel = 0;		//强制设置成输入
 		gpio_hd = gpio_request(&gpio_recovery, 1);
+		
 		if (gpio_hd)
 		{
 			int k;

@@ -2006,7 +2006,7 @@ EXPORT_SYMBOL_GPL(cpufreq_user_event_notify);
 
 #include <linux/reboot.h>
 #ifdef CONFIG_CPU_FREQ_GOV_FANTASYS
-extern int cpu_hotplug_set_lock(int num_core);
+extern int cpufreq_fantasys_cpu_lock(int num_core);
 #endif
 static int reboot_notifier_call(struct notifier_block *this, unsigned long code, void *_cmd)
 {
@@ -2021,7 +2021,7 @@ static int reboot_notifier_call(struct notifier_block *this, unsigned long code,
         return NOTIFY_DONE;
     }
     if (!strcmp(policy.governor->name, "fantasys")) {
-        cpu_hotplug_set_lock(1);
+        cpufreq_fantasys_cpu_lock(1);
         while (num_online_cpus() != 1) {
             msleep(20);
         }

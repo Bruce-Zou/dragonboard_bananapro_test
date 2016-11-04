@@ -39,7 +39,7 @@ static struct rsb_slave_set rsb_slave[]=
 
 static void rsb_cfg_io(void)
 {
-#if (defined(CONFIG_A67_FPGA) || defined(CONFIG_A50_FPGA) || (defined(CONFIG_A39_FPGA)))
+#if (defined(CONFIG_A50_FPGA) || (defined(CONFIG_A39_FPGA)))
 //	gpio_set_cfg(GPIO_H(14), 2, 3);
 //	gpio_set_pull(GPIO_H(14), 2, 1);
 //	gpio_set_drv(GPIO_H(14), 2, 2);
@@ -52,7 +52,7 @@ static void rsb_cfg_io(void)
 	//PH14,PH15 drv 2
 	rsb_reg_writel(rsb_reg_readl(SUNXI_PIO_BASE+0x110)& ~(0xf<<28),SUNXI_PIO_BASE+0x110);
 	rsb_reg_writel(rsb_reg_readl(SUNXI_PIO_BASE+0x110)|(0xa<<28),SUNXI_PIO_BASE+0x110);
-#elif (defined(CONFIG_ARCH_SUN8IW3P1) || defined(CONFIG_ARCH_SUN8IW5P1) )
+#elif defined(CONFIG_ARCH_SUN8IW3P1)
 //	r_gpio_set_cfg(R_GPIO_L(0), 2, 2);
 //	r_gpio_set_pull(R_GPIO_L(0), 2, 1);
 //	r_gpio_set_drv(R_GPIO_L(0), 2, 2);
@@ -167,12 +167,6 @@ static void rsb_init(void)
 //
 static s32 rsb_send_initseq(u32 slave_addr, u32 reg, u32 data)
 {
-
-	while(rsb_reg_readl(RSB_REG_STAT)&(RSB_LBSY_INT|RSB_TERR_INT|RSB_TOVER_INT))
-	{
-		rsb_printk("status err\n");
-	}
-
 	rsbc.rsb_busy = 1;
 	rsbc.rsb_flag = 0;
 	rsbc.rsb_load_busy = 0;
@@ -191,7 +185,6 @@ static s32 rsb_send_initseq(u32 slave_addr, u32 reg, u32 data)
 
 		if(istat & RSB_LBSY_INT){
 			rsbc.rsb_load_busy = 1;
-			rsb_reg_writel(istat, RSB_REG_STAT);
 			break;
 		}
 
@@ -231,12 +224,6 @@ static s32 rsb_send_initseq(u32 slave_addr, u32 reg, u32 data)
 
 static s32 set_run_time_addr(u32 saddr,u32 rtsaddr)
 {
-
-	while(rsb_reg_readl(RSB_REG_STAT)&(RSB_LBSY_INT|RSB_TERR_INT|RSB_TOVER_INT))
-	{
-		rsb_printk("status err\n");
-	}
-
 	rsbc.rsb_busy = 1;
 	rsbc.rsb_flag = 0;
 	rsbc.rsb_load_busy = 0;
@@ -253,7 +240,6 @@ static s32 set_run_time_addr(u32 saddr,u32 rtsaddr)
 
 		if(istat & RSB_LBSY_INT){
 			rsbc.rsb_load_busy = 1;
-			rsb_reg_writel(istat, RSB_REG_STAT);
 			break;
 		}
 
@@ -304,12 +290,6 @@ static s32 rsb_write(u32 rtsaddr,u32 daddr, u8 *data,u32 len)
 		rsb_printk("data should not be NULL\n");
 		return -1;
 	}
-
-	while(rsb_reg_readl(RSB_REG_STAT)&(RSB_LBSY_INT|RSB_TERR_INT|RSB_TOVER_INT))
-	{
-		rsb_printk("status err\n");
-	}
-
 	rsbc.rsb_flag = 0;
 	rsbc.rsb_busy = 1;
 	rsbc.rsb_load_busy	= 0;
@@ -349,7 +329,6 @@ static s32 rsb_write(u32 rtsaddr,u32 daddr, u8 *data,u32 len)
 
 		if(istat & RSB_LBSY_INT){
 			rsbc.rsb_load_busy = 1;
-			rsb_reg_writel(istat, RSB_REG_STAT);
 			break;
 		}
 
@@ -401,12 +380,6 @@ static s32 rsb_read(u32 rtsaddr,u32 daddr, u8 *data, u32 len)
 		rsb_printk("data should not be NULL\n");
 		return -1;
 	}
-
-	while(rsb_reg_readl(RSB_REG_STAT)&(RSB_LBSY_INT|RSB_TERR_INT|RSB_TOVER_INT))
-	{
-		rsb_printk("status err\n");
-	}
-
 	rsbc.rsb_flag = 0;
 	rsbc.rsb_busy = 1;
 	rsbc.rsb_load_busy	= 0;
@@ -438,7 +411,6 @@ static s32 rsb_read(u32 rtsaddr,u32 daddr, u8 *data, u32 len)
 
 		if(istat & RSB_LBSY_INT){
 			rsbc.rsb_load_busy = 1;
-			rsb_reg_writel(istat, RSB_REG_STAT);
 			break;
 		}
 

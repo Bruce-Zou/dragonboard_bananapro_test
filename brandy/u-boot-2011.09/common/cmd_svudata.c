@@ -267,7 +267,7 @@ int update_user_data(void)
 			printf("read flash error\n");
 			return 0;
 		}
-	
+
 		user_data_head = (USER_DATA_HEAR *)user_data_buffer;
 		user_data_p = (USER_PRIVATE_DATA *)(user_data_buffer + sizeof(USER_DATA_HEAR));
 

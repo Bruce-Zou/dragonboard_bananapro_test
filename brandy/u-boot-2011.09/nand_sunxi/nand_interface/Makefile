@@ -29,6 +29,12 @@ COBJS-y += nand_for_uboot.o		\
 		   nand_fspart.o		\
 		   nand_uboot_fun.o
 
+COBJS-$(CONFIG_ARCH_SUN7IW1P1) += nand_osal_uboot_sun7iw1.o
+COBJS-$(CONFIG_ARCH_SUN8IW1P1) += nand_osal_uboot_sun8iw1.o
+COBJS-$(CONFIG_ARCH_SUN8IW3P1) += nand_osal_uboot_sun8iw3.o
+COBJS-$(CONFIG_ARCH_SUN9IW1P1) += nand_osal_uboot_sun9iw1.o
+
+
 COBJS	:= $(COBJS-y)
 SRCS	:= $(COBJS:.o=.c)
 OBJS	:= $(addprefix $(obj),$(COBJS))

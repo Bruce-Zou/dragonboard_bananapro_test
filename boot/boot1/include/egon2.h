@@ -33,7 +33,8 @@
 #define   CONFIG_LOAD_BOOTIMG
 
 //#define  FORCE_BOOT_STANDBY
-//#define  CONFIG_AW_HOMELET_PRODUCT
+#define  CONFIG_AW_HOMELET_PRODUCT
+
 
 
 #include "types.h"

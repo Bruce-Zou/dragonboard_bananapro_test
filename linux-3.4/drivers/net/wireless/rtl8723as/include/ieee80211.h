@@ -1187,8 +1187,6 @@ enum ieee80211_state {
 #define DEFAULT_FTS 2346
 #define MAC_FMT "%02x:%02x:%02x:%02x:%02x:%02x"
 #define MAC_ARG(x) ((u8*)(x))[0],((u8*)(x))[1],((u8*)(x))[2],((u8*)(x))[3],((u8*)(x))[4],((u8*)(x))[5]
-#define IP_FMT "%d.%d.%d.%d"
-#define IP_ARG(x) ((u8*)(x))[0],((u8*)(x))[1],((u8*)(x))[2],((u8*)(x))[3]
 
 #ifdef PLATFORM_FREEBSD //Baron change func to macro
 #define is_multicast_mac_addr(Addr) ((((Addr[0]) & 0x01) == 0x01) && ((Addr[0]) != 0xff))
@@ -1205,12 +1203,6 @@ extern __inline int is_broadcast_mac_addr(const u8 *addr)
 {
 	return ((addr[0] == 0xff) && (addr[1] == 0xff) && (addr[2] == 0xff) &&   \
 		(addr[3] == 0xff) && (addr[4] == 0xff) && (addr[5] == 0xff));
-}
-
-extern __inline int is_zero_mac_addr(const u8 *addr)
-{
-	return ((addr[0] == 0x00) && (addr[1] == 0x00) && (addr[2] == 0x00) &&   \
-		(addr[3] == 0x00) && (addr[4] == 0x00) && (addr[5] == 0x00));
 }
 #endif //PLATFORM_FREEBSD
 
@@ -1556,7 +1548,6 @@ void rtw_WLAN_BSSID_EX_remove_p2p_attr(WLAN_BSSID_EX *bss_ex, u8 attr_id);
 #endif
 
 #ifdef CONFIG_WFD
-void dump_wfd_ie(u8 *ie, u32 ie_len);
 int rtw_get_wfd_ie(u8 *in_ie, int in_len, u8 *wfd_ie, uint *wfd_ielen);
 int rtw_get_wfd_ie_from_scan_queue(u8 *in_ie, int in_len, u8 *p2p_ie, uint *p2p_ielen, u8 frame_type);
 int rtw_get_wfd_attr_content(u8 *wfd_ie, uint wfd_ielen, u8 target_attr_id ,u8 *attr_content, uint *attr_contentlen);

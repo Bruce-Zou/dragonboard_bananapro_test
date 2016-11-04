@@ -647,7 +647,6 @@ static int sunxi_cpufreq_target(struct cpufreq_policy *policy, __u32 freq, __u32
 	}
 #endif
 
-	get_online_cpus();
     mutex_lock(&sunxi_cpu_lock);
 
 #ifdef CONFIG_SMP
@@ -698,7 +697,6 @@ out:
 	}
 #endif
     mutex_unlock(&sunxi_cpu_lock);
-	put_online_cpus();
 
     return ret;
 }
@@ -988,7 +986,12 @@ static int __init sunxi_cpufreq_initcall(void)
 	       clk_get_rate(clk_ahb), clk_get_rate(clk_apb));
 
 #ifdef CONFIG_CPU_FREQ_DVFS
-    corevdd = regulator_get(NULL, "axp20_core");
+	#if defined (CONFIG_AW_AXP15)
+		corevdd = regulator_get(NULL, "axp15_core");
+	#endif
+	#if defined (CONFIG_AW_AXP20)
+		corevdd = regulator_get(NULL, "axp20_core");
+	#endif
     if(IS_ERR(corevdd)) {
         CPUFREQ_INF("try to get regulator failed, core vdd will not changed!\n");
         corevdd = NULL;

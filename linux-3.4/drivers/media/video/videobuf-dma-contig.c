@@ -22,9 +22,7 @@
 #include <linux/sched.h>
 #include <linux/slab.h>
 #include <media/videobuf-dma-contig.h>
-//#include <linux/sunxi_physmem.h>
-#include <linux/ion_sunxi.h>
-
+#include <linux/sunxi_physmem.h>
 
 struct videobuf_dma_contig_memory {
 	u32 magic;
@@ -44,7 +42,7 @@ struct videobuf_dma_contig_memory {
 #define FPGA
 // #define USE_PHY_ADDR_DIRECT
 #define USE_SUNXI_MEM_ALLOCATOR
-
+#define USE_SUNXI_MEM_ALLOCATOR
 
 #ifndef USE_DMA_CONTIG
 #ifndef FPGA
@@ -117,8 +115,7 @@ static void videobuf_vm_close(struct vm_area_struct *vma)
 
 #ifdef USE_SUNXI_MEM_ALLOCATOR
 				//printk("videobuf_vm_close: 0x%08x\n", mem->dma_handle);
-				//sunxi_mem_free(mem->dma_handle);
-				sunxi_mem_free(mem->dma_handle, mem->size);
+				sunxi_mem_free(mem->dma_handle);
 #endif // USE_DMA_CONTIG
 				mem->vaddr = NULL;
 			}
@@ -362,8 +359,7 @@ static int __videobuf_mmap_mapper(struct videobuf_queue *q,
 
 #ifdef USE_SUNXI_MEM_ALLOCATOR
 		// printk("__videobuf_mmap_mapper: 0x%08x\n", mem->dma_handle);
-		//sunxi_mem_free(mem->dma_handle);
-		sunxi_mem_free(mem->dma_handle, mem->size);
+		sunxi_mem_free(mem->dma_handle);
 		//iounmap(mem->vaddr);
 #endif
 		goto error;
@@ -455,8 +451,7 @@ void videobuf_dma_contig_free(struct videobuf_queue *q,
 
 #ifdef USE_SUNXI_MEM_ALLOCATOR
 		// printk("videobuf_dma_contig_free: 0x%08x\n", mem->dma_handle);
-		//sunxi_mem_free(mem->dma_handle);
-		sunxi_mem_free(mem->dma_handle, mem->size);
+		sunxi_mem_free(mem->dma_handle);
 		//iounmap(mem->vaddr);
 #endif
 		mem->vaddr = NULL;

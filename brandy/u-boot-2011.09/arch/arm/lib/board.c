@@ -224,9 +224,6 @@ extern int display_inner(void);
 extern int script_init(void);
 extern int check_uart_input(void);
 extern int power_source_init(void);
-#if defined(CONFIG_USE_NEON_SIMD)
-extern int arm_neon_init(void);
-#endif
 /*
  * Breathe some life into the board...
  *
@@ -266,9 +263,6 @@ init_fnc_t *init_sequence[] = {
 //#if defined(CONFIG_ARCH_CPU_INIT)
 	arch_cpu_init,		/* basic arch cpu dependent setup */
 //#endif
-#if defined(CONFIG_USE_NEON_SIMD)
-	arm_neon_init,
-#endif
 #if defined(CONFIG_BOARD_EARLY_INIT_F)
 	board_early_init_f,
 #endif
@@ -575,12 +569,13 @@ void board_init_r(gd_t *id, ulong dest_addr)
 	/* enable exceptions */
 	enable_interrupts();
 	sunxi_dma_init();
+#ifdef CONFIG_ALLWINNER
 #ifdef DEBUG
     puts("ready to config storage\n");
 #endif
 	if((workmode == WORK_MODE_BOOT) || (workmode == WORK_MODE_CARD_PRODUCT))
 	{
-#if (defined(CONFIG_SUNXI_DISPLAY) || defined(CONFIG_SUN7I_DISPLAY) || defined(CONFIG_SUN6I))
+#if defined(CONFIG_SUNXI_DISPLAY)
 	    drv_disp_init();
 #endif
 		board_display_device_open();
@@ -592,25 +587,30 @@ void board_init_r(gd_t *id, ulong dest_addr)
 	{
 		sunxi_partition_init();
 	}
-//#else
-//#if defined(CONFIG_CMD_NAND)
-//	if(!storage_type){
-//		puts("NAND:  ");
-//		nand_init();        /* go init the NAND */
-//	}
-//#endif/*CONFIG_CMD_NAND*/
-//
-//#if defined(CONFIG_GENERIC_MMC)
-//	if(storage_type){
-//		puts("MMC:   ");
-//		mmc_initialize(bd);
-//	}
-//#endif/*CONFIG_GENERIC_MMC*/
+#else
+#if defined(CONFIG_CMD_NAND)
+	if(!storage_type){
+		puts("NAND:  ");
+		nand_init();        /* go init the NAND */
+	}
+#endif/*CONFIG_CMD_NAND*/
+
+#if defined(CONFIG_GENERIC_MMC)
+	if(storage_type){
+		puts("MMC:   ");
+		mmc_initialize(bd);
+	}
+#endif/*CONFIG_GENERIC_MMC*/
+
+#endif/*CONFIG_ALLWINNER*/
 
 #ifdef 	CONFIG_ARCH_HOMELET
+extern int check_boot_recovery_key();
+extern int sprite_form_sysrecovery();
+extern int sprite_led_init(void);
+extern int sprite_led_exit(int status);
 	if (!check_boot_recovery_key())
 	{
-		int ret;
 		sprite_led_init();
 		ret = sprite_form_sysrecovery();
 		sprite_led_exit(ret);
@@ -764,7 +764,8 @@ void board_init_r(gd_t *id, ulong dest_addr)
 		}
 #endif
     	printf("WORK_MODE_BOOT\n");
-#if (defined(CONFIG_SUN6I) || defined(CONFIG_A50) || defined(CONFIG_SUN7I) || defined(CONFIG_ARCH_SUN8IW5P1) || defined(CONFIG_ARCH_SUN9IW1P1))
+#ifdef CONFIG_ALLWINNER
+#if (defined(CONFIG_SUN6I) || defined(CONFIG_A50) || defined(CONFIG_SUN7I))
 		if(!ret)
 		{
 #ifndef CONFIG_ARCH_HOMELET
@@ -774,6 +775,8 @@ void board_init_r(gd_t *id, ulong dest_addr)
 			printf("sunxi_bmp_display\n");
 			sunxi_bmp_display("bootlogo.bmp");
 		}
+#endif
+		printf("WORK_MODE_BOOT\n");
 #endif
 	}
 	/* main_loop() can return to retry autoboot, if so just run it again. */

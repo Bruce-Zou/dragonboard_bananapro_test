@@ -33,13 +33,9 @@
 #define   	SUNXI_MBR_MAGIC			    "softw411"
 #define     SUNXI_MBR_MAX_PART_COUNT	120
 #define     SUNXI_MBR_COPY_NUM          4    //mbr的备份数量
-#define     SUNXI_MBR_RESERVED          (SUNXI_MBR_SIZE - 32 - 4 - (SUNXI_MBR_MAX_PART_COUNT * sizeof(sunxi_partition)))   //mbr保留的空间
+#define     SUNXI_MBR_RESERVED          (SUNXI_MBR_SIZE - 32 - (SUNXI_MBR_MAX_PART_COUNT * sizeof(sunxi_partition)))   //mbr保留的空间
 #define     SUNXI_DL_RESERVED           (SUNXI_DL_SIZE - 32 - (SUNXI_MBR_MAX_PART_COUNT * sizeof(dl_one_part_info)))
 
-#define     SUNXI_NOLOCK                (0)
-#define     SUNXI_LOCKING               (0xAA)
-#define     SUNXI_RELOCKING             (0xA0)
-#define     SUNXI_UNLOCK                (0xA5)
 /* partition information */
 typedef struct sunxi_partition_t
 {
@@ -52,12 +48,7 @@ typedef struct sunxi_partition_t
 	unsigned  int       user_type;          //用户类型
 	unsigned  int       keydata;            //关键数据，要求量产不丢失
 	unsigned  int       ro;                 //读写属性
-	unsigned  int       sig_verify;			//签名验证属性
-	unsigned  int       sig_erase;          //签名擦除属性
-	unsigned  int       sig_value[4];
-	unsigned  int       sig_pubkey;
-	unsigned  int       sig_pbumode;
-	unsigned  char      reserved2[36];		//保留数据，匹配分区信息128字节
+	unsigned  char      reserved[68];		//保留数据，匹配分区信息128字节
 }__attribute__ ((packed))sunxi_partition;
 
 /* mbr information */
@@ -71,7 +62,6 @@ typedef struct sunxi_mbr
 	unsigned  int       PartCount;			        //分区个数
 	unsigned  int       stamp[1];					//对齐
 	sunxi_partition     array[SUNXI_MBR_MAX_PART_COUNT];	//
-	unsigned  int       lockflag;
 	unsigned  char      res[SUNXI_MBR_RESERVED];
 }__attribute__ ((packed)) sunxi_mbr_t;
 

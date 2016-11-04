@@ -429,7 +429,7 @@ int main(int argc, char *argv[])
 				}
 
 				/* create sound play thread */
-				if(/*!mic_activated*/1){
+				if(!mic_activated){
 				    sound_play_stop = 0;
 				    ret = pthread_create(&tid, NULL, sound_play, NULL);
 				    if (ret != 0) {

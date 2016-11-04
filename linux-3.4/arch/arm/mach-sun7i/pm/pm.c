@@ -83,6 +83,8 @@ static int standby_timeout = 5;
 static int standby_axp_enable = 1;
 static int standby_timeout = 0;
 #endif
+static int standby_wakeup_src = 0;
+
 static unsigned long standby_crc_addr = 0x40000000;
 static int standby_crc_size = DRAM_BACKUP_SIZE;
 
@@ -133,6 +135,7 @@ static struct tmr_state saved_tmr_state;
 static struct twi_state saved_twi_state;
 static struct gpio_state saved_gpio_state;
 static struct sram_state saved_sram_state;
+static volatile __u32   dogMode;
 
 #ifdef GET_CYCLE_CNT
 static int start = 0;
@@ -170,7 +173,14 @@ EXPORT_SYMBOL(pm_enable_watchdog);
 
 //static volatile int enter_flag = 0;
 static int standby_mode = 1;
+static int ir_wakeup = 0;
 static int suspend_status_flag = 0;
+
+int pm_wakeup_src_enable(int src)
+{
+    standby_wakeup_src |= src;
+}
+EXPORT_SYMBOL(pm_wakeup_src_enable);
 
 /*
 *********************************************************************************************************
@@ -653,8 +663,11 @@ static int aw_pm_enter(suspend_state_t state)
         }else if(PM_SUSPEND_BOOTFAST == state){
             standby_info.standby_para.axp_src = AXP_BOOTFAST_WAKEUP;
         }
-        standby_info.standby_para.event_enable = (SUSPEND_WAKEUP_SRC_EXINT | SUSPEND_WAKEUP_SRC_ALARM);
-
+        //standby_info.standby_para.event_enable = (SUSPEND_WAKEUP_SRC_EXINT | SUSPEND_WAKEUP_SRC_ALARM | SUSPEND_WAKEUP_SRC_IR);
+				standby_info.standby_para.event_enable |= standby_wakeup_src;
+				standby_info.standby_para.event_enable |= (SUSPEND_WAKEUP_SRC_EXINT | SUSPEND_WAKEUP_SRC_ALARM );
+	if(ir_wakeup)
+		standby_info.standby_para.event_enable |= SUSPEND_WAKEUP_SRC_IR;
         if (standby_timeout != 0)
         {
             standby_info.standby_para.event_enable |= (SUSPEND_WAKEUP_SRC_TIMEOFF);
@@ -662,9 +675,6 @@ static int aw_pm_enter(suspend_state_t state)
         }
         /* goto sram and run */
         printk("standby_mode:%d, standby_type:%d, line:%d\n",standby_mode, standby_type, __LINE__);
-        __cpuc_flush_kern_all();
-        __cpuc_flush_user_all();
-        __cpuc_coherent_kern_range(0xc0000000, 0xffffffff-1);
         standby(&standby_info);
         printk("standby_mode:%d, standby_type:%d, line:%d\n",standby_mode, standby_type, __LINE__);
     }else if(SUPER_STANDBY == standby_type){
@@ -672,7 +682,7 @@ static int aw_pm_enter(suspend_state_t state)
             print_call_info();
             aw_super_standby(state);    
     }
-    pm_enable_watchdog();
+    dogMode = pm_enable_watchdog();
     print_call_info();
 
     if(unlikely(debug_mask&PM_STANDBY_PRINT_REG)){
@@ -755,7 +765,7 @@ void aw_pm_end(void)
             restore_perfcounter();
     #endif
 #endif
-    pm_disable_watchdog(0);
+    pm_disable_watchdog(dogMode);
     
     if(unlikely(debug_mask&PM_STANDBY_PRINT_REG)){
         printk("after dev suspend, line:%d\n", __LINE__);
@@ -825,7 +835,7 @@ static int dram_para_script_fetch(char *sub, u32 *val)
 }
 
 
-int fetch_dram_para(standy_dram_para_t *pstandby_dram_para)
+static int fetch_and_save_dram_para(standy_dram_para_t *pstandby_dram_para)
 {
 	int ret;
 	ret = dram_para_script_fetch( "dram_baseaddr", &pstandby_dram_para->dram_baseaddr);
@@ -962,10 +972,10 @@ static int __init aw_pm_init(void)
     
     PM_DBG("aw_pm_init!\n");
 
-    if (fetch_dram_para(&standby_info.dram_para) != 0)
+    if (fetch_and_save_dram_para(&standby_info.dram_para) != 0)
     {
         memset(&standby_info.dram_para, 0, sizeof(standby_info.dram_para));
-        pr_err("%s: fetch_dram_para err. \n", __func__);
+        pr_err("%s: fetch_and_save_dram_para err. \n", __func__);
     }
     memcpy(&mem_para_info.dram_para, &standby_info.dram_para, sizeof(standby_info.dram_para));
     
@@ -981,6 +991,16 @@ static int __init aw_pm_init(void)
         if(1 != standby_mode){
             pr_err("%s: not support super standby. \n",  __func__);
         }
+    }
+
+    //get ir_wakeup.
+    if(SCIRPT_ITEM_VALUE_TYPE_INT != script_get_item("ir_para", "ir_wakeup", &item)){
+        pr_err("%s: script_parser_fetch err. \n", __func__);
+        ir_wakeup = 0;
+        pr_err("notice: ir_wakeup = %d.\n", ir_wakeup);
+    }else{
+        ir_wakeup = item.val;
+        pr_info("ir_wakeup = %d. \n", ir_wakeup);
     }
 
     //get wakeup_src_para cpu_en

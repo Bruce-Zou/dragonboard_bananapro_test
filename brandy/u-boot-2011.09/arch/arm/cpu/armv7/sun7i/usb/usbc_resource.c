@@ -113,59 +113,5 @@ int usb_close_clock(void)
 
 	return 0;
 }
-/*
-*******************************************************************************
-*                     usb_probe_vbus_type
-*
-* Description:
-*    void
-*
-* Parameters:
-*    void
-*
-* Return value:
-*    void
-*
-* note:
-*    void
-*
-*******************************************************************************
-*/
-int usb_probe_vbus_type(void)
-{
-	__u32 base_reg_val;
-	__u32 reg_val = 0;
-	__u32 dp, dm = 0;
-	__u32 dpdm_det[6];
-	__u32 dpdm_ret = 0;
-	int   i =0 ;
 
-	reg_val = readl(SUNXI_USBOTG_BASE + USBC_REG_o_ISCR);
-	base_reg_val = reg_val;
-	reg_val |= (1 << 16) | (1 << 17);
-	writel(reg_val, SUNXI_USBOTG_BASE + USBC_REG_o_ISCR);
-
- 	__msdelay(10);
-	for(i=0;i<6;i++)
-	{
-		reg_val = readl(SUNXI_USBOTG_BASE + USBC_REG_o_ISCR);
- 	 	dp = (reg_val >> 26) & 0x01;
- 	 	dm = (reg_val >> 27) & 0x01;
-
- 	 	dpdm_det[i] = (dp << 1) | dm;
- 	 	dpdm_ret += dpdm_det[i];
-
- 	 	__msdelay(10);
-	}
-	writel(base_reg_val, SUNXI_USBOTG_BASE + USBC_REG_o_ISCR);
-
-  	if(dpdm_ret > 12)
-  	{
-  		return 1;			//DC
-  	}
-  	else
-  	{
-  		return 0;			//PC
-  	}
-}
 

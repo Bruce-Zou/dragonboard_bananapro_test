@@ -45,8 +45,7 @@
 
 #include "sunxi_emac.h"
 
-#undef	PHY_POWER
-#undef	DYNAMIC_MAC_SYSCONFIG
+#define	PHY_POWER
 #define	SYSCONFIG_GPIO
 #define	SYSCONFIG_CCMU
 
@@ -900,11 +899,12 @@ static int wemac_phy_init(wemac_board_info_t *db)
     
     if (db->mos_gpio){
         db->mos_gpio->gpio.data = 1;
+        gpio_direction_output(db->mos_gpio->gpio.gpio,1);
         __gpio_set_value(db->mos_gpio->gpio.gpio, db->mos_gpio->gpio.data);
     }
 
 #endif
-
+	mdelay(50);
 	reg_val = readl(db->emac_vbase + EMAC_MAC_SUPP_REG);
 	reg_val |= 0x1<<15;
 	writel(reg_val, db->emac_vbase + EMAC_MAC_SUPP_REG);
@@ -1851,28 +1851,37 @@ static void wemac_get_macaddr(wemac_board_info_t *db)
 	struct net_device *ndev = db->ndev;
 	int i;
 	char *p = mac_str;
+	script_item_u emac_mac;
+	int got_mac = 0;
 
 	for(i=0;i<6;i++,p++)
 		ndev->dev_addr[i] = simple_strtoul(p, &p, 16);
 
-#ifdef DYNAMIC_MAC_SYSCONFIG
-    
-    script_item_u emac_mac;
-    if(SCIRPT_ITEM_VALUE_TYPE_STR != script_get_item("dynameic", "MAC", &emac_mac)){
-        printk(KERN_WARNING "In sysconfig.fex emac mac address is not valid!\n");
-    } else if(!is_valid_ether_addr(ndev->dev_addr)){
-        emac_mac.str[12] = '\0';
-        for (i=0; i < 6; i++){ 
-			char emac_tmp[3]=":::";
-			memcpy(emac_tmp, (char *)(emac_mac.str+i*2), 2);
-			emac_tmp[2]=':';
-			ndev->dev_addr[i] = simple_strtoul(emac_tmp, NULL, 16);
-        }
-    }
 
-#endif
+	if(SCIRPT_ITEM_VALUE_TYPE_STR != script_get_item("dynameic", "MAC", &emac_mac)){
+		printk(KERN_WARNING "In sysconfig.fex emac mac address is not valid!\n");
+	} else {
+		if (is_valid_ether_addr(ndev->dev_addr)) {
+			got_mac = 1;
+			pr_warning("emac: use sysconfig mac address\n");
+		}
+	}
+
+	if (!got_mac) {
+		unsigned int reg_val;
+		reg_val = readl(SW_VA_SID_IO_BASE);
+		pr_warning("emac: use mac address from chipid\n");
+		ndev->dev_addr[0] = 0x02; /* Non OUI / registered MAC address */
+		ndev->dev_addr[1] = (reg_val >>  0) & 0xff;
+		reg_val = readl(SW_VA_SID_IO_BASE + 0x0c);
+		ndev->dev_addr[2] = (reg_val >> 24) & 0xff;
+		ndev->dev_addr[3] = (reg_val >> 16) & 0xff;
+		ndev->dev_addr[4] = (reg_val >>  8) & 0xff;
+		ndev->dev_addr[5] = (reg_val >>  0) & 0xff;
+	}
 
 	if (!is_valid_ether_addr(ndev->dev_addr)){
+		pr_warning("emac: use random mac address\n");
 		eth_hw_addr_random(ndev);
 	}
 
@@ -2009,8 +2018,8 @@ static struct platform_driver wemac_driver = {
 static int __init set_mac_addr(char *str)
 {
 	char* p = str;
-
-	memcpy(mac_str, p, 18);
+	if (str && strlen(str))
+		memcpy(mac_str, p, 18);
 
 	return 0;
 }

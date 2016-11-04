@@ -1439,27 +1439,22 @@ static int android_bind(struct usb_composite_dev *cdev)
 #else
 {
     struct android_usb_config usb_config;
-	struct sw_chip_id chip_id;
+//	struct sw_chip_id chip_id;
 	char temp_str[128];
 
-        get_android_usb_config(&usb_config);
-	sw_get_chip_id2(&chip_id);
-		
+    get_android_usb_config(&usb_config);
+//	sw_get_chip_id(&chip_id);
+
 	strncpy(manufacturer_string, usb_config.usb_manufacturer_name, sizeof(manufacturer_string) - 1);
 	strncpy(product_string, usb_config.usb_product_name, sizeof(product_string) - 1);
-//	strncpy(serial_string, usb_config.usb_serial_number, sizeof(serial_string) - 1);
-	sprintf(serial_string, "%03x%08x%08x\n",chip_id.sid_rkey2, chip_id.sid_rkey1, chip_id.sid_rkey0);
-
-//	printk("[before]serial_string: %s\n",serial_string);
+	strncpy(serial_string, usb_config.usb_serial_number, sizeof(serial_string) - 1);
 
 	memset(temp_str, 0, 128);
 //	sprintf(temp_str, "%x", chip_id.sid_rkey3);
 	strcat(serial_string, temp_str);
 
-	/* get19bit */
-	serial_string[19] = '\0';
-
-	
+	/* ȡ32λ */
+	serial_string[32] = '\0';
 }
 #endif
 
@@ -1631,6 +1626,7 @@ static int __init init(void)
 	/* Override composite driver functions */
 	composite_driver.setup = android_setup;
 	composite_driver.disconnect = android_disconnect;
+
 	return usb_composite_probe(&android_usb_driver, android_bind);
 }
 module_init(init);

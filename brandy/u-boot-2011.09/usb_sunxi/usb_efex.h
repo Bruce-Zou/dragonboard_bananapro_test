@@ -292,6 +292,7 @@ typedef  struct  tag_efex_tool_s
 
     s32  next_mode;
     s32  res0;
+    //s32  res1;
 }fes_efex_tool_t;
 
 

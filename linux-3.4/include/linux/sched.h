@@ -123,10 +123,10 @@ void get_avenrun_sec(unsigned long *loads, unsigned long offset, int shift);
 #define FSHIFT		12		/* nr of bits of precision */
 #define FIXED_1		(1<<FSHIFT)	/* 1.0 as fixed-point */
 #define LOAD_FREQ	(HZ+1)	/* 5 sec intervals */
-#define EXP_1		4028		/* 1/exp(1sec/1min) as fixed-point */
-#define EXP_5		4083		/* 1/exp(1sec/5min) */
-#define EXP_15		4092		/* 1/exp(1sec/15min) */
-#define EXP_5sec	3277		/* 1/exp(1sec/5sec) as fixed-point */
+#define EXP_1		4028		/* 1/exp(5sec/1min) as fixed-point */
+#define EXP_5		4083		/* 1/exp(5sec/5min) */
+#define EXP_15		4092		/* 1/exp(5sec/15min) */
+#define EXP_5sec	3277		/* 1/exp(5sec/1min) as fixed-point */
 
 #if 0
 #define FSHIFT		11		/* nr of bits of precision */

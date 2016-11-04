@@ -310,11 +310,6 @@
 #define REG_TX_RPT_TIME				0x04F0	// 2 byte
 #define REG_DUMMY					0x04FC
 
-#ifdef CONFIG_WOWLAN
-#define REG_TXPKTBUF_IV_LOW             0x0484
-#define REG_TXPKTBUF_IV_HIGH            0x0488
-#endif
-
 //-----------------------------------------------------
 //
 //	0x0500h ~ 0x05FFh	EDCA Configuration
@@ -1539,7 +1534,7 @@ Current IOREG MAP
 #define POLLING_READY_TIMEOUT_COUNT		1000 
 //#endif
 // GPIO BIT
-#define	HAL_8188E_HW_GPIO_WPS_BIT		BIT7
+#define	HAL_8192C_HW_GPIO_WPS_BIT		BIT2
 
 #if 0//(RTL8188E_SUPPORT == 1)
 ////////////////////////////////ONLY for 88EE/////////////////////////////////
@@ -1626,8 +1621,7 @@ Current IOREG MAP
 #define	EEPROM_RF_ANTENNA_OPT_88E			0xC9
 
 #ifdef CONFIG_RF_GAIN_OFFSET
-#define	EEPROM_RF_GAIN_OFFSET_88E			0xC1
-#define	EEPROM_RF_GAIN_VAL_88E				0xF6 //Physical address which is the BB gain offset value
+#define	EEPROM_RF_GAIN_OFFSET_88E			0xFD
 #endif //CONFIG_RF_GAIN_OFFSET
 
 // RTL88EE

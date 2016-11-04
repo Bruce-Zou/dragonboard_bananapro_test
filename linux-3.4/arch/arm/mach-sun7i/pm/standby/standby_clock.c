@@ -22,11 +22,8 @@
 static __ccmu_reg_list_t   *CmuReg;;
 static __u32    ccu_reg_back[7];
 __u32   cpu_ms_loopcnt;
-__u32   pio_int_deb_back;
 
-#define PIO_INT_DEB_REG (SW_VA_PORTC_IO_BASE + 0x218)
-
-//==============================================================================
+//==============================================================================
 // CLOCK SET FOR SYSTEM STANDBY
 //==============================================================================
 
@@ -170,15 +167,36 @@ __s32 standby_clk_core2pll(void)
 * Returns    : 0;
 *********************************************************************************************************
 */
-__s32 standby_clk_plldisable(void)
+__s32 standby_clk_plldisable(int mask)
 {
-    CmuReg->Pll1Ctl.PLLEn = 0;
-    CmuReg->Pll2Ctl.PLLEn = 0;
-    CmuReg->Pll3Ctl.PLLEn = 0;
-    CmuReg->Pll4Ctl.PLLEn = 0;
-    CmuReg->Pll5Ctl.PLLEn = 0;
-    CmuReg->Pll6Ctl.PLLEn = 0;
-    CmuReg->Pll7Ctl.PLLEn = 0;
+    if (mask&0x2)
+    {
+        CmuReg->Pll1Ctl.PLLEn = 0;
+    }
+    if (mask&0x4)
+    {
+        CmuReg->Pll2Ctl.PLLEn = 0;
+    }
+    if (mask&0x8)
+    {
+        CmuReg->Pll3Ctl.PLLEn = 0;
+    }
+    if (mask&0x10)
+    {
+        CmuReg->Pll4Ctl.PLLEn = 0;
+    }
+    if (mask&0x20)
+    {
+        CmuReg->Pll5Ctl.PLLEn = 0;
+    }
+    if (mask&0x40)
+    {
+        CmuReg->Pll6Ctl.PLLEn = 0;
+    }
+    if (mask&0x80)
+    {
+        CmuReg->Pll7Ctl.PLLEn = 0;
+    }
 
     return 0;
 }
@@ -528,16 +546,5 @@ __s32 standby_clk_ahb_restore(void)
     /* restore ahb clock */
     CmuReg->SysClkDiv.AHBClkSrc = sysclk_bak.AHBClkSrc;
     return 0;
-}
-
-void standby_pio_clk_src_init()
-{
-    pio_int_deb_back = *(__u32*)PIO_INT_DEB_REG;
-    *(__u32*)PIO_INT_DEB_REG = pio_int_deb_back & (~1);
-}
-
-void standby_pio_clk_src_exit()
-{
-    *(__u32*)PIO_INT_DEB_REG = pio_int_deb_back;
 }
 

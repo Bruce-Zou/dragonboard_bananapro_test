@@ -111,7 +111,6 @@ int main(void)
     {
         serial_puts("before jump_to_resume. \n");
     }
-    pm_enable_watchdog();
     //before jump, invalidate data
     jump_to_resume((void *)mem_para_info.resume_pointer, mem_para_info.saved_runtime_context_svc);
     

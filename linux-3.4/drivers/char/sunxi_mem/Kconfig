@@ -4,6 +4,6 @@
 
 config SUNXI_PHYS_MEM_ALLOCATOR
 	bool "sunxi continous physic memory allocator"
-	default n
+	default y
 	help
 	Nothing help.

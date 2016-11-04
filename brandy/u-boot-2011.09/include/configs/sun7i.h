@@ -36,8 +36,6 @@
 
 #define UBOOT_VERSION			"1.1.0"
 #define UBOOT_PLATFORM		    "1.0.0"
-
-#define CONFIG_TARGET_NAME              sun7i
 /*
  * High Level Configuration Options
  */
@@ -45,11 +43,14 @@
 #define CONFIG_ALLWINNER			/* It's a Allwinner chip */
 #define	CONFIG_SUNXI				/* which is sunxi family */
 #define CONFIG_SUN7I				/* which is sun7i */
+#define CONFIG_ARCH_SUN7IW1P1
 #define CONFIG_ARCH_SUN7I
-//#define CONFIG_ARCH_HOMELET
+#define CONFIG_ARCH_HOMELET
 //#define CONFIG_FPGA					/* working with fpga board */
 
 #undef FORCE_BOOT_STANDBY
+
+//#define CONFIG_SUNXI_DISPLAY
 
 /*
 * define dram  & sram parameters
@@ -141,16 +142,17 @@
 ***************************************************************/
 #define CONFIG_USE_IRQ
 #define CONFIG_CMD_IRQ
-#define CONFIG_SUNXI_AXP
-#define CONFIG_SUNXI_AXP20
+//#define CONFIG_SUNXI_AXP			1
 #define CONFIG_SUNXI_RTC            1
 #define CONFIG_CMD_ELF
 #define CONFIG_DOS_PARTITION
 #define CONFIG_CMD_BOOTA
 #define CONFIG_SUN7I_DMA
 #define CONFIG_CMD_MEMORY
-#define CONFIG_SUN7I_DISPLAY
-#define CONFIG_SUNXI_AXP_MAIN        PMU_TYPE_20X
+#define CONFIG_SUNXI_DISPLAY
+
+#define CONFIG_SUNXI_AXP20
+#define CONFIG_SUNXI_AXP15
 #define PMU_SCRIPT_NAME                 "pmu_para"
 #define BOARD_LATE_INIT				/* init the fastboot partitions */
 

@@ -137,7 +137,7 @@ static struct ir_config_info ir_info = {
 	.input_type = IR_TYPE,
 	.rate = 0,
 };
-static u32 debug_mask = 0xff;
+static u32 debug_mask = 0x00;
 #define dprintk(level_mask, fmt, arg...)	if (unlikely(debug_mask & level_mask)) \
 	printk("***IR***" KERN_DEBUG fmt , ## arg)
 

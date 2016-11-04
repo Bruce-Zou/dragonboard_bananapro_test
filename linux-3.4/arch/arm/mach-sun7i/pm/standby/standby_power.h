@@ -21,10 +21,10 @@
 #include "standby_cfg.h"
 
 enum power_vol_type_e{
-
     POWER_VOL_DCDC1,
     POWER_VOL_DCDC2,
     POWER_VOL_DCDC3,
+    POWER_VOL_DCDC4,
     POWER_VOL_LDO1,
     POWER_VOL_LDO2,
     POWER_VOL_LDO3,
@@ -32,7 +32,23 @@ enum power_vol_type_e{
 
 };
 
-#define AXP_ADDR        (0x34)
+#if defined (CONFIG_AW_AXP15)
+#define AXP_ADDR      (0x30)
+#endif
+
+#if defined (CONFIG_AW_AXP20)
+#define AXP_ADDR      (0x34)
+#endif
+
+#define AXP15_DCDC1		(0x26)
+#define AXP15_DCDC2		(0x23)
+#define AXP15_DCDC3		(0x27)
+#define AXP15_DCDC4		(0x2B)   
+
+#define AXP15_IRQEN2	(0x41)
+#define AXP15_IRQEN3	(0x42)
+#define AXP15_PEK		(0x36)
+
 #define AXP_IICBUS      (0)
 #define AXP20_LDO1      (0x00)
 #define AXP20_LDO2      (0x28)

@@ -77,6 +77,8 @@ void free_mlme_ap_info(_adapter *padapter)
 	_enter_critical_bh(&(pstapriv->sta_hash_lock), &irqL);		
 	rtw_free_stainfo(padapter, psta);
 	_exit_critical_bh(&(pstapriv->sta_hash_lock), &irqL);
+	
+
 	_rtw_spinlock_free(&pmlmepriv->bcn_update_lock);
 	
 }
@@ -291,9 +293,6 @@ void rtw_remove_bcn_ie(_adapter *padapter, WLAN_BSSID_EX *pnetwork, u8 index)
 		remainder_ielen = pnetwork->IELength - ie_offset - ielen;
 
 		dst_ie = p;
-	}
-	else {
-		return;
 	}
 
 	if(remainder_ielen>0)
@@ -901,7 +900,7 @@ void update_bmc_sta(_adapter *padapter)
 		psta->raid = raid;
 		psta->init_rate = init_rate;
 
-		rtw_sta_media_status_rpt(padapter, psta, 1);
+		rtw_stassoc_hw_rpt(padapter, psta);
 
 		_enter_critical_bh(&psta->lock, &irqL);
 		psta->state = _FW_LINKED;
@@ -2751,6 +2750,7 @@ void ap_sta_info_defer_update(_adapter *padapter, struct sta_info *psta)
 		add_RATid(padapter, psta, 0);//DM_RATR_STA_INIT
 	}	
 }
+
 /* restore hw setting from sw data structures */
 void rtw_ap_restore_network(_adapter *padapter)
 {
@@ -2766,7 +2766,7 @@ void rtw_ap_restore_network(_adapter *padapter)
 	char chk_alive_list[NUM_STA];
 	int i;
 
-	rtw_setopmode_cmd(padapter, Ndis802_11APMode,_FALSE);
+	rtw_setopmode_cmd(padapter, Ndis802_11APMode);
 
 	set_channel_bwmode(padapter, pmlmeext->cur_channel, pmlmeext->cur_ch_offset, pmlmeext->cur_bwmode);
 
@@ -2776,7 +2776,13 @@ void rtw_ap_restore_network(_adapter *padapter)
 		(padapter->securitypriv.dot11PrivacyAlgrthm == _AES_))
 	{
 		/* restore group key, WEP keys is restored in ips_leave() */
-		rtw_set_key(padapter, psecuritypriv, psecuritypriv->dot118021XGrpKeyid, 0,_FALSE);
+		rtw_set_key(padapter, psecuritypriv, psecuritypriv->dot118021XGrpKeyid, 0);
+	}
+
+	/* per sta pairwise key and settings */
+	if((padapter->securitypriv.dot11PrivacyAlgrthm != _TKIP_) &&
+		(padapter->securitypriv.dot11PrivacyAlgrthm != _AES_)) {
+		return;
 	}
 
 	_enter_critical_bh(&pstapriv->asoc_list_lock, &irqL);
@@ -2808,12 +2814,7 @@ void rtw_ap_restore_network(_adapter *padapter)
 		{
 			Update_RA_Entry(padapter, psta);
 			//pairwise key
-			/* per sta pairwise key and settings */
-			if(	(padapter->securitypriv.dot11PrivacyAlgrthm == _TKIP_) ||
-				(padapter->securitypriv.dot11PrivacyAlgrthm == _AES_))
-			{
-				rtw_setstakey_cmd(padapter, (unsigned char *)psta, _TRUE,_FALSE);
-			}			
+			rtw_setstakey_cmd(padapter, (unsigned char *)psta, _TRUE);
 		}
 	}
 

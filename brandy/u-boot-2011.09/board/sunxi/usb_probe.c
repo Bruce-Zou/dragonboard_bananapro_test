@@ -417,32 +417,6 @@ static void usb_soft_connect(void)
 */
 static void usb_clock_init(void)
 {
-
-#ifdef CONFIG_ARCH_SUN7I
-	__u32 temp;
-
-    /* AHB gating */
-	temp = *(volatile unsigned int *)(0x1c20000 + 0x60);
-	temp |= 0x01;
-	*(volatile unsigned int *)(0x1c20000 + 0x60) = temp;
-	__msdelay(1);
-
-    /* phy0/1/2 gating */
-	temp = *(volatile unsigned int *)(0x1c20000 + 0xcc);
-	temp |= 0x01<<8;
-	*(volatile unsigned int *)(0x1c20000 + 0xcc) = temp;
-	__msdelay(1);
-
-    /* usb phy0 reset control*/
-	temp = *(volatile unsigned int *)(0x1c20000 + 0xcc);
-	temp |= 0x01;
-	*(volatile unsigned int *)(0x1c20000 + 0xcc) = temp;
-
-	__msdelay(1);
-
-	return;
-#endif
-
     u32 ccmu_base = 0x1c20000;
     u32 reg_value = 0;
     u32 offset_ahb = 0x60;
@@ -491,33 +465,6 @@ static void usb_clock_init(void)
 */
 static void usb_clock_exit(void)
 {
-
-#ifdef CONFIG_ARCH_SUN7I
-	__u32 temp;
-
-    /* AHB gating */
-	temp = *(volatile unsigned int *)(0x1c20000 + 0x60);
-	temp &= ~0x01;
-	*(volatile unsigned int *)(0x1c20000 + 0x60) = temp;
-	__msdelay(1);
-
-
-    /* phy0/1/2 gating */
-	temp = *(volatile unsigned int *)(0x1c20000 + 0xcc);
-	temp &= ~(0x01<<8);
-	*(volatile unsigned int *)(0x1c20000 + 0xcc) = temp;
-	__msdelay(1);
-
-
-    /* usb phy0 reset control*/
-	temp = *(volatile unsigned int *)(0x1c20000 + 0xcc);
-	temp &= ~0x01;
-	*(volatile unsigned int *)(0x1c20000 + 0xcc) = temp;
-	__msdelay(1);
-
-	return;
-#endif
-
     u32 ccmu_base = 0x1c20000;
     u32 reg_value = 0;
     u32 offset_ahb = 0x60;
@@ -581,7 +528,7 @@ static void usb_init(void)
 
 	debug("USB Device!!\n");
 	usb_clear_bus_interrupt_enable(0xff);
-	usb_set_bus_interrupt_enable(0xff);
+	usb_set_bus_interrupt_enable(0xf7);
 	//usb_set_eptx_interrupt_enable(0x3f);
 	//usb_set_eprx_interrupt_enable(0x3e);
 	return;
@@ -638,9 +585,8 @@ static void usb_detect_irq_handler(void *p_arg)
 	usb_clear_bus_interrupt_status(temp);
 
 	debug("usb irq %x\n", temp);
-	tick_printf("usb irq %x\n", temp);
 
-	if(temp & 0x08)
+	if(temp & 0x04)
 	{
 		usb_clock_exit();
 		irq_disable(AW_IRQ_USB_OTG);
@@ -679,13 +625,7 @@ int usb_detect_enter(void)
 		usb_working = 1;
 		usb_clock_init();
 
-	
-        #ifdef CONFIG_ARCH_SUN7I
-		timer_for_usb.expires  = 2000; 
-        #else
 		timer_for_usb.expires  = BOOT_USB_DETECT_DELAY_TIME;
-       	#endif
-        
 		timer_for_usb.function = timer_test_usbdc;
 		timer_for_usb.data     = 0;
 		add_timer(&timer_for_usb);

@@ -52,13 +52,8 @@ int sprite_cartoon_screen_set(void)
 {
 	uint arg[4] = { 0 };
 	/* 初始化图形参数 */
-#ifndef CONFIG_ARCH_SUN9IW1P1
 	sprite_source.screen_width  = disp_ioctl(NULL, DISP_CMD_SCN_GET_WIDTH, (void*)arg);
 	sprite_source.screen_height = disp_ioctl(NULL, DISP_CMD_SCN_GET_HEIGHT, (void*)arg);
-#else
-	sprite_source.screen_width  = disp_ioctl(NULL, DISP_CMD_GET_SCN_WIDTH, (void*)arg);
-	sprite_source.screen_height = disp_ioctl(NULL, DISP_CMD_GET_SCN_HEIGHT, (void*)arg);
-#endif
 	if((sprite_source.screen_width < 40) || (sprite_source.screen_height < 40))
 	{
 		printf("sunxi cartoon error: invalid screen width or height\n");
@@ -108,13 +103,8 @@ int sprite_cartoon_test(void)
 	sprite_cartoon_screen_set();
 	board_display_show_until_lcd_open(0);
 
-#ifndef CONFIG_ARCH_SUN9IW1P1
 	screen_width  = disp_ioctl(NULL, DISP_CMD_SCN_GET_WIDTH, (void*)arg);
 	screen_height = disp_ioctl(NULL, DISP_CMD_SCN_GET_HEIGHT, (void*)arg);
-#else
-	screen_width  = disp_ioctl(NULL, DISP_CMD_GET_SCN_WIDTH, (void*)arg);
-	screen_height = disp_ioctl(NULL, DISP_CMD_GET_SCN_HEIGHT, (void*)arg);
-#endif
 
 	printf("screen_width = %d\n", screen_width);
     printf("screen_height = %d\n", screen_height);
@@ -190,13 +180,8 @@ uint sprite_cartoon_create(void)
 	}
 	board_display_show_until_lcd_open(0);
 
-#ifndef CONFIG_ARCH_SUN9IW1P1
 	screen_width  = disp_ioctl(NULL, DISP_CMD_SCN_GET_WIDTH, (void*)arg);
 	screen_height = disp_ioctl(NULL, DISP_CMD_SCN_GET_HEIGHT, (void*)arg);
-#else
-	screen_width  = disp_ioctl(NULL, DISP_CMD_GET_SCN_WIDTH, (void*)arg);
-	screen_height = disp_ioctl(NULL, DISP_CMD_GET_SCN_HEIGHT, (void*)arg);
-#endif
 
 	printf("screen_width = %d\n", screen_width);
     printf("screen_height = %d\n", screen_height);

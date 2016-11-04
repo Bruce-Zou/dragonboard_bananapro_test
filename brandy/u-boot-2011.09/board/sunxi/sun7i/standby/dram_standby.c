@@ -42,7 +42,7 @@
 
 void standby_delay(int ms)
 {
-    volatile int i;
+    int i;
 
     for(i=ms;i>0;i--);
 

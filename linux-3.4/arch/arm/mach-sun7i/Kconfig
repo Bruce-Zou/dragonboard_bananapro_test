@@ -21,9 +21,3 @@ config SW_POWERNOW
     default y
     help
         Support for sw_powernow function
-
-config SW_DRAM_FREQ
-    bool "Enable dram frequence scaling while early suspend"
-    default y
-    help
-        Support for dram frequence scaling

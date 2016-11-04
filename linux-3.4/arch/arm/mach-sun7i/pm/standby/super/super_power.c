@@ -378,9 +378,6 @@ __s32 mem_power_exit(__u32 wakeup_src)
 {
 	__u8    reg_val;
 
-	twi_byte_rw(TWI_OP_RD, AXP_ADDR,AXP20_IRQ4, &reg_val);
-	twi_byte_rw(TWI_OP_WR, AXP_ADDR,0x0E, &reg_val);
-
 	//setup_env();
 	/* disable power key long/short */
 	if(wakeup_src & AXP_WAKEUP_KEY){

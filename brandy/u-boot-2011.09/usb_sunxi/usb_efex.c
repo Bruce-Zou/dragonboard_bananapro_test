@@ -1008,6 +1008,8 @@ static int __sunxi_usb_efex_op_cmd(u8 *cmd_buffer)
 						trans_data.last_err      = -1;
 					}
 				}
+				//trans_data.last_err          	 = 0;
+				//trans_data.app_next_status   	 = SUNXI_USB_EFEX_APPS_SEND_DATA;
 			}
 
 			break;

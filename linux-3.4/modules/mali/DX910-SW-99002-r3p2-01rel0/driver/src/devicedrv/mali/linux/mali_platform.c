@@ -36,19 +36,6 @@ struct clk *h_ahb_mali  = NULL;
 struct clk *h_mali_clk  = NULL;
 struct clk *h_gpu_pll   = NULL;
 
-//struct __sun7i_reserved_addr {
-//unsigned int paddr;
-//unsigned int size;
-//};
-
-struct __fb_addr_para {
-unsigned int fb_paddr;
-unsigned int fb_size;
-};
-
-void sun7i_get_gpu_addr(struct __sun7i_reserved_addr *gpu_addr);
-void sun7i_get_fb_addr_para(struct __fb_addr_para *fb_addr_para);
-
 #ifdef CONFIG_GPU_DVFS
 
 struct mali_dvfstab
@@ -91,26 +78,6 @@ MODULE_PARM_DESC(mali_clk_div, "Clock divisor for mali");
 static void mali_platform_device_release(struct device *device);
 void mali_gpu_utilization_handler(u32 utilization);
 
-////////////for dynamic freq//////////////////////////////
-static ssize_t mali_use_show(struct device *dev,
-		struct device_attribute *attr, char *buf){
-
-    return sprintf(buf, "%d\n", mali_dvfs_utilization);
-}
-static DEVICE_ATTR(mali_use, 0444, mali_use_show, NULL);
-
-static struct attribute *sunxi_reg_attributes[] = {
-	&dev_attr_mali_use.attr,
-	NULL
-};
-
-static struct attribute_group sunxi_reg_attribute_group = {
-	.name = "aw_mali_use",
-	.attrs = sunxi_reg_attributes
-};
-
-////////////////////////////////////////////////////////////////////////
-
 typedef enum mali_power_mode_tag
 {
 	MALI_POWER_MODE_ON,
@@ -136,11 +103,11 @@ static struct platform_device mali_gpu_device =
 
 static struct mali_gpu_device_data mali_gpu_data = 
 {
-//    .dedicated_mem_start = SW_GPU_MEM_BASE - PLAT_PHYS_OFFSET,
-//    .dedicated_mem_size = SW_GPU_MEM_SIZE,
+    .dedicated_mem_start = SW_GPU_MEM_BASE,
+    .dedicated_mem_size = SW_GPU_MEM_SIZE,
     .shared_mem_size = 512*1024*1024,
-//    .fb_start = SW_FB_MEM_BASE,
-//    .fb_size = SW_FB_MEM_SIZE,
+    .fb_start = SW_FB_MEM_BASE,
+    .fb_size = SW_FB_MEM_SIZE,
     .utilization_interval = 2000,
     .utilization_handler = mali_gpu_utilization_handler,
 };
@@ -282,20 +249,11 @@ _mali_osk_errcode_t mali_platform_power_mode_change(mali_power_mode power_mode)
 int sun7i_mali_platform_device_register(void)
 {
     int err;
-    struct __sun7i_reserved_addr gpu_addr = {0};
-    struct __fb_addr_para fb_addr_para={0};
-
-    sun7i_get_gpu_addr(&gpu_addr);
-    sun7i_get_fb_addr_para(&fb_addr_para);
 
     MALI_DEBUG_PRINT(2,("sun7i_mali_platform_device_register() called\n"));
 
     err = platform_device_add_resources(&mali_gpu_device, mali_gpu_resources, sizeof(mali_gpu_resources) / sizeof(mali_gpu_resources[0]));
     if (0 == err){
-        mali_gpu_data.dedicated_mem_start = gpu_addr.paddr - PLAT_PHYS_OFFSET;
-        mali_gpu_data.dedicated_mem_size = gpu_addr.size;
-        mali_gpu_data.fb_start = fb_addr_para.fb_paddr;
-        mali_gpu_data.fb_size = fb_addr_para.fb_size;
         err = platform_device_add_data(&mali_gpu_device, &mali_gpu_data, sizeof(mali_gpu_data));
         if(0 == err){
             err = platform_device_register(&mali_gpu_device);
@@ -505,9 +463,8 @@ static void deinit_mali_dvfs(void)
 
 void mali_gpu_utilization_handler(unsigned int utilization)
 {
-
-    mali_dvfs_utilization = utilization;
 #ifdef CONFIG_DYNAMIC_GPU_FREQ
+    mali_dvfs_utilization = utilization;
 	queue_work(mali_dvfs_wq, &mali_dvfs_work);
 #endif
 	/*add error handle here*/
@@ -578,8 +535,6 @@ static int mali_freq_init(void)
 {
     script_item_u   mali_use, mali_max_freq, mali_min_freq, mali_vol;
 
-	sysfs_create_group(&mali_gpu_device.dev.kobj,
-						 &sunxi_reg_attribute_group);
     mali_regulator = regulator_get(NULL, "axp20_ddr");
 	if (IS_ERR(mali_regulator)) {
 	    printk("get mali regulator failed\n");
@@ -631,8 +586,6 @@ static int mali_freq_init(void)
 
 static void mali_freq_exit(void)
 {
-    sysfs_remove_group(&mali_gpu_device.dev.kobj,
-						 &sunxi_reg_attribute_group);
     deinit_mali_dvfs();
     if (mali_regulator) {
         regulator_put(mali_regulator);

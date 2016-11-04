@@ -478,20 +478,22 @@ __s32 BootOS_detect_os_type(__u32 *para_addr, __u32 *kernal_addr, void *os_info,
 
     if(signature_verify(mbr))
     {
-    	__inf("signature verify failed\n");
+    	__inf("signature verify failed,stay here.\n");
+        volatile __u32 here =0x55;
         __u32 private_start;
         __u32 private_size;
         __u32 erase_block_once=16;
         char* private_data;
         int j;
     	//wBoot_power_set_off();
+        while(here==0x55);
+        #if 0
         for(j=0;j<mbr->PartCount;j++)
         {
         	if(!strcmp("private", (const char *)mbr->array[j].name))
             {
                 private_start = mbr->array[j].addrlo;
                 private_size  = mbr->array[j].lenlo ;
-                __inf("private_stat =%d\n",private_start);
                 __inf("private_size =%d\n",private_size);
                 private_data = wBoot_malloc(erase_block_once<<9);
                 memset(private_data,0xff,erase_block_once<<9);
@@ -511,7 +513,7 @@ __s32 BootOS_detect_os_type(__u32 *para_addr, __u32 *kernal_addr, void *os_info,
                 
             }
     	}
-
+       #endif
     }
 #ifdef CONFIG_LOAD_BOOTIMG    
     for(i=0;i<mbr->PartCount;i++)

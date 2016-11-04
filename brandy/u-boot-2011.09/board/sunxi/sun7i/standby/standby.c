@@ -31,7 +31,6 @@ static int boot_exit_standby(void);
 static int boot_standby_detect(void);
 static int boot_mod_enter_standby(void);
 static int boot_mod_exit_standby(void);
-static int boot_early_standby_mode(void);
 
 static int standby_flag = 0;
 static int status;
@@ -68,19 +67,86 @@ void standby_get_dram_para(void)
  */
 int boot_standby_mode(void)
 {
-   	int status;
+    __u32 dcin_exist, battery_exist, charge_status;
+    __s32 key_status;
+    status = -1;
+    //检查是否有按键按下
+    key_status = boot_power_get_key();
+    if(key_status & 0x01)			//长按键的情况下，不管电源是否移除，直接进入系统
+    {
+        //退出所有的驱动模块
+        if(standby_flag)
+        {
+            boot_mod_exit_standby();
+        }
+        return 3;
+    }
+    //检查外部电源是否存在
+    dcin_exist = 100;
+    battery_exist = 100;
+    boot_power_get_dcin_battery_exist(&dcin_exist, &battery_exist);
+    if(!dcin_exist)							//外部电源移除
+    {
+        //退出所有的驱动模块
+        if(standby_flag)
+        {
+            boot_mod_exit_standby();
+        }
+        return 4;
+    }
+   	charge_status = boot_power_battery_charge_status();		//充电完成
+   	if((charge_status > 0) && (battery_exist == 1))
+   	{
+   	    //退出所有的驱动模块
+   		if(standby_flag)
+   		{
+   			boot_mod_exit_standby();
+   		}
+   		return 5;
+   	}
 
-	//axp_set_suspend_chgcur();
-	boot_store_sp();
-	boot_set_sp();
+    if(key_status & 0x02)			//当外部电源存在，继续standby
+    {
+        //退出所有的驱动模块
+        if(standby_flag)
+        {
+            boot_mod_exit_standby();
+        }
+        return 2;
+    }
+    //保存原来的SP
+    boot_store_sp();
+    //设置新的SP，存放在SRAM中
+    boot_set_sp();
 
-	status = boot_early_standby_mode();
-	//standby_serial_putc('[');
+    if(!standby_flag)
+    {
+        boot_mod_enter_standby();
+    }
+    boot_enter_standby();
+    //现在，clock运行在32k上
+    do
+    {
+        //开始循环检查是否开始唤醒
+        boot_halt();
+        status = boot_standby_detect();
+    }
+    while(status <= 0);
+    //发现需要唤醒，退出standby
+    boot_exit_standby();
+    //退出模块的standby
+    if((status != 8) && (status != 9))
+    {
+        boot_mod_exit_standby();
+        standby_flag = 0;
+    }
+    else
+    {
+        standby_flag = 1;
+    }    
 
-	boot_restore_sp();
-	//standby_serial_putc('{');
-
-	return status;
+    boot_restore_sp();
+    return status;
 }
 /*
  ************************************************************************************************************
@@ -212,8 +278,6 @@ static int boot_enter_standby(void)
 
     //降低电源电压输出
     boot_power_set_dcdc2(DCDC2_STANDBY_VOL);
-	////使能电源中断，等待唤醒
-    //boot_power_int_enable();	
     //切换分频比全为0
     standby_clock_divsetto0();
     //__debug("after standby_clock_divsetto0 fail\n");
@@ -244,10 +308,10 @@ static int boot_enter_standby(void)
  */
 static int boot_exit_standby(void)
 {
-    volatile int i;
+    int i;
 
-    ////关闭电源中断
-    //boot_power_int_disable();
+    //关闭电源中断
+    boot_power_int_disable();
     //设置电压
     boot_power_set_dcdc2(1400);
     //	boot_power_set_dcdc3(-1);
@@ -267,8 +331,6 @@ static int boot_exit_standby(void)
 #ifdef STANDBY_CHECK_CRC
     standby_after_check_crc();
 #endif
-    //关闭电源中断
-    boot_power_int_disable();
     //还原中断状态
     standby_int_exit();
     //还原充电电流
@@ -296,7 +358,7 @@ static int boot_exit_standby(void)
  */
 static int boot_standby_detect(void)
 {
-    volatile int i;
+    int   i;
     __u32 dcin_exist, battery_exist;
     __u8  power_int_status[5];
 
@@ -340,10 +402,11 @@ static int boot_standby_detect(void)
     {
         return 8;
     }
-    //if(power_int_status[0] & 0x04)			//usb火牛移除
-    //{
-    //    return 9;
-    //}
+    if(power_int_status[0] & 0x04)			//usb火牛移除
+    {
+        return 9;
+    }
+
     //还原到32K
     standby_clock_divsetto0();
     standby_clock_apb1_to_source(32000);
@@ -395,109 +458,6 @@ static int boot_mod_exit_standby(void)
 	mod_func(MOD_EXIT_STANDBY, 0);
 
 	return 0;
-}
-
-
-/*
-************************************************************************************************************
-*
-*                                             function
-*
-*    函数名称：
-*
-*    参数列表：
-*
-*    返回值  ：
-*
-*    说明    ：
-*
-*
-************************************************************************************************************
-*/
-static int boot_early_standby_mode(void)
-{
-	__u32 dcin_exist, battery_exist;//, charge_status;
-	__s32 key_status, usb_status;
-    status = -1;	
-    //检查是否有按键按下
-    key_status = boot_power_get_key();
-    if(key_status & 0x01)			//长按键的情况下，不管电源是否移除，直接进入系统
-    {
-        //退出所有的驱动模块
-        if(standby_flag)
-        {
-            boot_mod_exit_standby();
-        }
-        return 3;
-    }
-    //检查外部电源是否存在
-    dcin_exist = 100;
-    battery_exist = 100;
-    boot_power_get_dcin_battery_exist(&dcin_exist, &battery_exist);
-    if(!dcin_exist)							//外部电源移除
-    {
-        //退出所有的驱动模块
-        if(standby_flag)
-        {
-            boot_mod_exit_standby();
-        }
-        return 4;
-    }
-   	//charge_status = boot_power_battery_charge_status();		//充电完成
-  	//	if((charge_status > 0) && (battery_exist == 1))
-   	//{
-   	//    //退出所有的驱动模块
-   	//	if(standby_flag)
-   	//	{
-   	//		boot_mod_exit_standby();
-   	//	}
-   	//	return 5;
-   	//}
-
-    if(key_status & 0x02)			//当外部电源存在，继续standby
-    {
-        //退出所有的驱动模块
-        if(standby_flag)
-        {
-            boot_mod_exit_standby();
-        }
-        return 2;
-    }
-    if(!standby_flag)
-    {
-        boot_mod_enter_standby();
-    }
-
-	//检查是否有USB电源插入
-	usb_status = standby_axp_probe_usb();
-
-	if(usb_status > 0)
-	{
-		return 8;
-	}
-	status = -1;
-	boot_enter_standby();
-    //现在，clock运行在32k上
-    do
-    {
-        //开始循环检查是否开始唤醒
-        boot_halt();
-        status = boot_standby_detect();
-    }
-    while(status <= 0);
-    //发现需要唤醒，退出standby
-    boot_exit_standby();
-    //退出模块的standby
-    if((status != 8) && (status != 9))
-    {
-        boot_mod_exit_standby();
-        standby_flag = 0;
-    }
-    else
-    {
-        standby_flag = 1;
-    }  
-    return status;
 }
 
 

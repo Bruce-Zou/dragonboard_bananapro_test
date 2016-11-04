@@ -277,11 +277,7 @@ LIBS += drivers/usb/host/libusb_host.o
 LIBS += drivers/usb/musb/libusb_musb.o
 LIBS += drivers/usb/phy/libusb_phy.o
 #LIBS += drivers/video/libvideo.o
-ifeq ($(SOC),sun7i)
-LIBS += drivers/video_sun7i/libvideo_sunxi.o
-else
 LIBS += drivers/video_sunxi/libvideo_sunxi.o
-endif
 LIBS += drivers/pwm/libsunxi_pwm.o
 LIBS += drivers/watchdog/libwatchdog.o
 LIBS += common/libcommon.o
@@ -307,8 +303,7 @@ LIBS += $(CPUDIR)/s5p-common/libs5p-common.o
 endif
 
 #ifeq ($(SOC),sunxi)
-LIBS += nand_sunxi/$(SOC)/osal/libnand_osal.o
-LIBS += nand_sunxi/$(SOC)/libnand-$(SOC)
+LIBS += nand_sunxi/libnand-$(SOC)
 LIBS += nand_sunxi/nand_interface/libnand_interface.o
 #endif
 
@@ -425,8 +420,9 @@ $(obj)u-boot.ubl:       $(obj)u-boot-nand.bin
 		-e $(CONFIG_SYS_TEXT_BASE) -d $< $@
 
 $(obj)u-boot-$(TARGET).bin:	$(obj)u-boot.bin
-		@cp $(obj)u-boot.bin         $(obj)u-boot-$(CONFIG_TARGET_NAME).bin
-		-@cp -v $(obj)u-boot-$(CONFIG_TARGET_NAME).bin  $(TOPDIR)/../../tools/pack/chips/$(CONFIG_TARGET_NAME)/bin/u-boot-$(CONFIG_TARGET_NAME).bin
+		@cp $(obj)u-boot.bin         $(obj)u-boot-$(TARGET).bin
+		-@cp -v $(obj)u-boot-$(TARGET).bin  $(TOPDIR)/../pack/chips/$(TARGET)/bin/u-boot-$(TARGET).bin
+		-@cp -v $(obj)u-boot-$(TARGET).bin  $(TOPDIR)/../../tools/pack/chips/$(TARGET)/bin/u-boot-$(TARGET).bin
 
 GEN_UBOOT = \
 		UNDEF_SYM=`$(OBJDUMP) -x $(LIBBOARD) $(LIBS) | \

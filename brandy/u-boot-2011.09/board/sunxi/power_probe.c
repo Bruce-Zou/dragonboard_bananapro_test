@@ -26,7 +26,7 @@
 #include <asm/arch/intc.h>
 #include <pmu.h>
 #include "power_probe.h"
-#include <asm/arch/usb.h>
+
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -150,92 +150,8 @@ void power_limit_detect_enter(void)
 void power_limit_detect_exit(void)
 {
 	usb_detect_exit();
-	irq_disable(AW_IRQ_NMI);
 	axp_int_disable();
+	irq_disable(AW_IRQ_NMI);
 
 	tick_printf("power limit detect exit\n");
-}
-/*
-************************************************************************************************************
-*
-*                                             function
-*
-*    函数名称：
-*
-*    参数列表：
-*
-*    返回值  ：
-*
-*    说明    ：
-*
-*
-************************************************************************************************************
-*/
-int __usb_probe_vbus_type(void)		//如果没有声明，默认为pc类型电源
-{
-	return 0;
-}
-
-int usb_probe_vbus_type(void)
-	__attribute__((weak, alias("__usb_probe_vbus_type")));
-
-
-
-void power_limit_init(void)
-{
-	int battery_exist = 0;
-	int dcin_exist = 0;
-	int vbus_type = 0;
-	int i = 0;
-
-	do
-	{
-		axp_power_get_dcin_battery_exist(&dcin_exist, &battery_exist);//判断电池是否存在
-		if(battery_exist >= 0)
-		{
-			break;
-		}
-		i ++;
-		__msdelay(500);
-	}
-	while(i < 4);
-
-	if(battery_exist != BATTERY_EXIST)			//电池不存在，则直接限流到DC模式
-	{
-		axp_set_vbus_limit_dc();
-		puts("no battery, limit to dc\n");
-
-		return ;
-	}
-
-	if(dcin_exist == AXP_DCIN_EXIST)		//如果普通外部电源存在，不是VBUS类型
-	{
-		axp_set_vbus_limit_dc();
-		puts("normal dc exist, limit to dc\n");
-
-		return ;
-	}
-
-	if(dcin_exist == AXP_VBUS_EXIST)		//如果VBUS电源存在
-	{
-		vbus_type = usb_probe_vbus_type();
-
-		if(vbus_type == 1)					//属于dc类型电源
-		{
-			axp_set_vbus_limit_dc();    //dp_dm 拉高
-			puts("vbus dc exist, limit to dc\n");
-		}
-		else
-		{
-			axp_set_vbus_limit_pc();    //dp_dm 拉低
-			puts("vbus pc exist, limit to pc\n");
-		}
-
-		return ;
-	}
-
-	axp_set_vbus_limit_dc();				//只有电池存在
-	puts("only battery exist, limit to dc\n");
-
-	return ;
 }

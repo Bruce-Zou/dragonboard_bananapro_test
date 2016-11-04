@@ -46,8 +46,10 @@ __s32  TVE_init(__u32 sel)
 	    TVE_dac_sel(0, 2, 2);
 	    TVE_dac_sel(0, 3, 3);
 	}
-	TVE_SET_BIT(sel,TVE_008,0x3<<16);	
-	TVE_WUINT32(sel,TVE_024,0x18181818);
+
+	TVE_SET_BIT(sel,TVE_008,0x3<<16);
+	TVE_SET_BIT(sel,TVE_008,0xf<<18);
+	TVE_WUINT32(sel,TVE_024,0x10101010);
 
 	return 0;
 }
@@ -78,7 +80,7 @@ __s32 TVE_open(__u32 sel)
 __s32 TVE_close(__u32 sel)
 {
     TVE_CLR_BIT(sel,TVE_000, 0x1<<0);
-    TVE_WUINT32(sel,TVE_024,0x18181818);
+    TVE_WUINT32(sel,TVE_024,0x10101010);
     return 0;
 }
 
@@ -321,7 +323,7 @@ __s32 TVE_set_tv_mode(__u32 sel, __u8 mode)
 	TVE_CLR_BIT(sel,TVE_008,0xfff<<4);
 	TVE_SET_BIT(sel,TVE_008,0x3<<16);	
 	TVE_SET_BIT(sel,TVE_008,0xf<<18);	
-	TVE_WUINT32(sel,TVE_024,0x18181818);
+	TVE_WUINT32(sel,TVE_024,0x1b1b1b1b);
 	
 	return 0;
 }
@@ -336,11 +338,7 @@ __s32 TVE_set_vga_mode(__u32 sel)
     readval = TVE_RUINT32(sel,TVE_024);
     TVE_WUINT32(sel,TVE_024, readval&0xff000000);
     
-    if(0 == sel)
-        TVE_INIT_BIT(0,TVE_000, 0xfff<<4,0x321<<4);
-    else
-        TVE_INIT_BIT(0,TVE_000, 0xfff<<4,0x765<<4);
-
+    TVE_INIT_BIT(0,TVE_000, 0xfff<<4,0x321<<4); 
 	return 0;
 }
 

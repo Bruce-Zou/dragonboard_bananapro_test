@@ -81,17 +81,13 @@ int cleanup_before_linux(void)
 	return 0;
 }
 
-void __cpu0_set_detected_paras(void)
-{
-}
-
-void cpu0_set_detected_paras(void)
-	__attribute__((weak, alias("__cpu0_set_detected_paras")));
-
+extern int cpu0_set_detected_paras(void);
 
 int arch_cpu_init (void)
 {
+#ifndef CONFIG_ARCH_SUN7IW1P1
 	cpu0_set_detected_paras();		//add by jerry
+#endif
 
 	icache_enable();
 

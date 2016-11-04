@@ -358,53 +358,65 @@ __s32 Scaler_close(__u32 sel)
 
 __s32 Scaler_Request(__u32 sel)
 {
-	__s32 ret = DIS_NO_RES;
-	__u32 i;
+    __s32 ret = DIS_NO_RES;
 
-	DE_INF("Scaler_Request,%d\n", sel);
+    DE_INF("Scaler_Request,%d\n", sel);
 
-	for(i=0; i<2; i++) {
-		if(((sel == i) || (sel == 0xff))
-		    && (!(gdisp.scaler[i].status & SCALER_USED)))	{
-			ret = i;
-			Scaler_open(ret);
-			gdisp.scaler[ret].b_close = FALSE;
-			gdisp.scaler[ret].status |= SCALER_USED;
-			break;
-		}	else if(((sel == i) || (sel == 0xff))
-		    && (gdisp.scaler[i].b_close == TRUE))	{
-			ret = i;
-			gdisp.scaler[ret].b_close = FALSE;
-			gdisp.scaler[ret].status |= SCALER_USED;
-			break;
-		}
-	}
+    if(sel == 0)//request scaler0
+    {
+        if(!(gdisp.scaler[0].status & SCALER_USED))
+        {
+            ret = 0;
+        }
+    }
+    else if(sel == 1)//request scaler1
+    {
+        if(!(gdisp.scaler[1].status & SCALER_USED))
+        {
+            ret = 1;
+        }
+    }
+    else//request any scaler
+    {
+        if(!(gdisp.scaler[0].status & SCALER_USED))
+        {
+            ret = 0;
+        }
+        else if(!(gdisp.scaler[1].status & SCALER_USED))
+        {
+            ret = 1;
+        }
+    }
 
-	return ret;
+    if(ret == 0 || ret == 1)
+    {
+        Scaler_open(ret);
+        gdisp.scaler[ret].b_close = FALSE;
+        gdisp.scaler[ret].status |= SCALER_USED;
+    }
+    else
+    {
+        DE_WRN("request scaler fail\n");
+    }
+    return ret;
 }
 
 
 __s32 Scaler_Release(__u32 sel, __bool b_display)
 {   
-    __u32 screen_index = 0xff;
-	__bool b_display_off = TRUE;
-
-	DE_INF("Scaler_Release:%d\n", sel);
-
-	DE_SCAL_Set_Di_Ctrl(sel, 0, 0, 0, 0);
-	screen_index = gdisp.scaler[sel].screen_index;
-
-	if((screen_index != 0xff)
-	    && (BSP_disp_get_output_type(screen_index) != DISP_OUTPUT_TYPE_NONE))	{
-		b_display_off = FALSE;
-	}
-	if((b_display == FALSE) || b_display_off) {
-		Scaler_close(sel);
-	}	else {
-		gdisp.scaler[sel].b_close = TRUE;
-	}
-
-	return DIS_SUCCESS;
+    DE_INF("Scaler_Release:%d\n", sel);
+    
+    DE_SCAL_Set_Di_Ctrl(sel, 0, 0, 0, 0);
+    if(b_display == FALSE || BSP_disp_get_output_type(sel)==DISP_OUTPUT_TYPE_NONE)
+    {
+        Scaler_close(sel);
+    }
+    else
+    {
+        gdisp.scaler[sel].b_close = TRUE;
+    }
+    
+    return DIS_SUCCESS;
 }
 
 

@@ -25,7 +25,6 @@ include $(TOPDIR)/config.mk
 
 LIB	:= $(obj)librsb.o
 
-COBJS-$(CONFIG_ARCH_SUN8IW5P1) += rsb.o
 COBJS-$(CONFIG_ARCH_SUN8IW3P1) += rsb.o
 COBJS-$(CONFIG_ARCH_SUN9IW1P1) += rsb.o
 

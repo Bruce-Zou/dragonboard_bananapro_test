@@ -78,7 +78,6 @@
 
 	#define CONFIG_P2P_PS
 	//#define CONFIG_P2P_IPS
-	#define P2P_OP_CHECK_SOCIAL_CH
 #endif
 
 //	Added by Kurt 20110511
@@ -120,7 +119,6 @@
 #define CONFIG_LONG_DELAY_ISSUE
 #define CONFIG_NEW_SIGNAL_STAT_PROCESS
 #define RTW_NOTCH_FILTER 0 /* 0:Disable, 1:Enable, */
-#define CONFIG_DEAUTH_BEFORE_CONNECT
 //#define CONFIG_PATCH_JOIN_WRONG_CHANNEL
 
 
@@ -147,7 +145,6 @@
 #ifdef CONFIG_CONCURRENT_MODE
 	#define CONFIG_TSF_RESET_OFFLOAD 			// For 2 PORT TSF SYNC.
 	//#define CONFIG_HWPORT_SWAP				//Port0->Sec , Port1 -> Pri
-	//#define CONFIG_STA_MODE_SCAN_UNDER_AP_MODE
 #endif	// CONFIG_CONCURRENT_MODE
 
 
@@ -194,8 +191,6 @@
 #define CONFIG_SW_ANTENNA_DIVERSITY
 //#define CONFIG_HW_ANTENNA_DIVERSITY
 #endif
-
-//#define CONFIG_RF_GAIN_OFFSET
 
 #ifndef DISABLE_BB_RF
 #define DISABLE_BB_RF	0

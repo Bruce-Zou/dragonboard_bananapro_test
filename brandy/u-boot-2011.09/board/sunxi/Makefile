@@ -25,8 +25,6 @@ include $(TOPDIR)/config.mk
 
 LIB	= $(obj)lib$(VENDOR).o
 
-SOBJS-$(CONFIG_USE_NEON_SIMD) += arm_neon.o
-
 COBJS-y	+= board_common.o	\
 		   bat_cartoon.o	\
 		   de.o				\
@@ -45,12 +43,9 @@ COBJS-y += cartoon/sprite_char/sprite_char.o				\
 COBJS-y += sys_partition.o		\
 		   sys_config.o
 
-SOBJS   := $(SOBJS-y)
-COBJS	:= $(COBJS-y)
-SRCS	:= $(COBJS:.o=.c) $(SOBJS:.o=.S)
-OBJS	:= $(addprefix $(obj),$(COBJS) $(SOBJS))
-
-all:    $(LIB)
+SRCS	:= $(SOBJS:.o=.S) $(COBJS-y:.o=.c)
+OBJS	:= $(addprefix $(obj),$(COBJS-y))
+SOBJS	:= $(addprefix $(obj),$(SOBJS))
 
 $(LIB):	$(obj).depend $(OBJS)
 	$(call cmd_link_o_target, $(OBJS))

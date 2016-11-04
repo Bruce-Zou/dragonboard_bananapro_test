@@ -26,7 +26,9 @@ __s32 Hdmi_hal_video_enable(__bool enable)
         hdmi_state = HDMI_State_Video_config;
     }
     video_enable = enable;
-    return 0;
+    hdmi_core_video_en(enable);
+    
+		return 0;
 }
 
 __s32 Hdmi_hal_set_display_mode(__u32 hdmi_mode)

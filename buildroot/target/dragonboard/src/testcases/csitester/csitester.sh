@@ -9,18 +9,6 @@
 source send_cmd_pipe.sh
 source script_parser.sh
 
-module_path=`script_fetch "csi" "module_path"`
-
-if [ -z "$module_path" ]; then
-    echo "no gpio-sunxi.ko to install"
-    SEND_CMD_PIPE_FAIL $3
-    exit 1
-else
-    echo "begin intall gpio-sunxi.ko"
-    insmod "$module_path"
-fi
-
-
 tmp_pin1=`script_fetch "csi" "gpio_pin1"`
 tmp_pin2=`script_fetch "csi" "gpio_pin2"`
 tmp_pin3=`script_fetch "csi" "gpio_pin3"`
@@ -41,11 +29,11 @@ tmp_pin17=`script_fetch "csi" "gpio_pin17"`
 tmp_pin18=`script_fetch "csi" "gpio_pin18"`
 tmp_pin19=`script_fetch "csi" "gpio_pin19"`
 
-#if [ -z "$tmp_pin1" ]; then
-#	echo "gpio_pin not config"
-#	SEND_CMD_PIPE_FAIL $3
-#    exit 1        
-#else
+if [ -z "$tmp_pin1" ]; then
+	echo "gpio_pin not config"
+	SEND_CMD_PIPE_FAIL $3
+    exit 1        
+else
 	tmp1=${tmp_pin1%%<*}
 	gpio_pin1=${tmp1#*:}
 
@@ -102,7 +90,9 @@ tmp_pin19=`script_fetch "csi" "gpio_pin19"`
 
         tmp19=${tmp_pin19%%<*}
         gpio_pin19=${tmp19#*:}
-#fi
+fi
+
+
 
 #if [ ! -d "/sys/class/gpio_sw/${gpio_pin[$nr]}" ]; then
 #	echo "mabey cant intall gpio-sunxi.ko"
@@ -136,10 +126,10 @@ for nr in [ 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 ]; do
 	temp_data=pin_data$nr                  
         eval temp_data=\$$temp_data  
 	echo 1 > ${temp_data}
-#	if [ $? -ne 0 ]; then
-#		SEND_CMD_PIPE_FAIL $3
-#		exit 1
-#	fi
+	if [ $? -ne 0 ]; then
+		SEND_CMD_PIPE_FAIL $3
+		exit 1
+	fi
 done
 	sleep 3
 
@@ -147,10 +137,10 @@ for nr in [ 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 ]; do
 	temp_data=pin_data$nr
         eval temp_data=\$$temp_data 
 	echo 0 > ${temp_data}
-#	if [ $? -ne 0 ]; then
-#		SEND_CMD_PIPE_FAIL $3
-#		exit 1
-#	fi
+	if [ $? -ne 0 ]; then
+		SEND_CMD_PIPE_FAIL $3
+		exit 1
+	fi
 done
 
 	SEND_CMD_PIPE_OK $3

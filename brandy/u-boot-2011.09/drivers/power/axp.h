@@ -144,6 +144,7 @@ sunxi_axp_dev_t;
 #if defined(CONFIG_SUNXI_AXP15)
 	sunxi_axp_module_ext(SUNXI_AXP_15X);
 #endif
+
 static inline int axp_i2c_read(unsigned char chip, unsigned char addr, unsigned char *buffer)
 {
 #if defined(CONFIG_SUNXI_I2C)

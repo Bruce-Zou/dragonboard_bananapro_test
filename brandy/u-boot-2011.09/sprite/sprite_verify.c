@@ -26,7 +26,6 @@
 #include <malloc.h>
 #include "sparse/sparse.h"
 #include <sunxi_mbr.h>
-#include <sunxi_board.h>
 
 #define  VERIFY_ONCE_BYTES    (16 * 1024 * 1024)
 #define  VERIFY_ONCE_SECTORS  (VERIFY_ONCE_BYTES/512)
@@ -48,7 +47,6 @@
 */
 uint add_sum(void *buffer, uint length)
 {
-#ifndef CONFIG_USE_NEON_SIMD
 	unsigned int *buf;
 	unsigned int count;
 	unsigned int sum;
@@ -75,11 +73,6 @@ uint add_sum(void *buffer, uint length)
 			sum += (*buf & 0x00ffffff);
 			break;
 	}
-#else
-	uint sum;
-
-	sum = add_sum_neon(buffer, length);
-#endif
 
 	return sum;
 }
@@ -202,7 +195,6 @@ uint sunxi_sprite_part_sparsedata_verify(void)
 */
 uint sunxi_sprite_generate_checksum(void *buffer, uint length, uint src_sum)
 {
-#ifndef CONFIG_USE_NEON_SIMD
 	uint *buf;
 	uint count;
 	uint sum;
@@ -221,11 +213,7 @@ uint sunxi_sprite_generate_checksum(void *buffer, uint length, uint src_sum)
 
 	while( count-- > 0 )
 		sum += *buf++;
-#else
-	uint sum;
 
-	sum = add_sum_neon(buffer, length);
-#endif
 	sum = sum - src_sum + STAMP_VALUE;
 
     return sum;
@@ -248,7 +236,6 @@ uint sunxi_sprite_generate_checksum(void *buffer, uint length, uint src_sum)
 */
 int sunxi_sprite_verify_checksum(void *buffer, uint length, uint src_sum)
 {
-#ifndef CONFIG_USE_NEON_SIMD
 	uint *buf;
 	uint count;
 	uint sum;
@@ -267,11 +254,7 @@ int sunxi_sprite_verify_checksum(void *buffer, uint length, uint src_sum)
 
 	while( count-- > 0 )
 		sum += *buf++;
-#else
-	uint sum;
 
-	sum = add_sum_neon(buffer, length);
-#endif
 	sum = sum - src_sum + STAMP_VALUE;
 
 	debug("src sum=%x, check sum=%x\n", src_sum, sum);

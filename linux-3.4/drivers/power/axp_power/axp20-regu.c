@@ -46,7 +46,8 @@ static int axp_set_voltage(struct regulator_dev *rdev,
 	struct device *axp_dev = to_axp_dev(rdev);
 	uint8_t val, mask;
 	
-
+	
+	
 	if (check_range(info, min_uV, max_uV)) {
 		pr_err("invalid voltage range (%d, %d) uV\n", min_uV, max_uV);
 		return -EINVAL;

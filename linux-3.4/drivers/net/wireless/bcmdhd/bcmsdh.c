@@ -2,9 +2,27 @@
  *  BCMSDH interface glue
  *  implement bcmsdh API for SDIOH driver
  *
- * $ Copyright Open Broadcom Corporation $
+ * Copyright (C) 1999-2012, Broadcom Corporation
+ * 
+ *      Unless you and Broadcom execute a separate written software license
+ * agreement governing use of this software, this software is licensed to you
+ * under the terms of the GNU General Public License version 2 (the "GPL"),
+ * available at http://www.broadcom.com/licenses/GPLv2.php, with the
+ * following added to such license:
+ * 
+ *      As a special exception, the copyright holders of this software give you
+ * permission to link this software with independent modules, and to copy and
+ * distribute the resulting executable under terms of your choice, provided that
+ * you also meet, for each linked independent module, the terms and conditions of
+ * the license of that module.  An independent module is a module which is not
+ * derived from this software.  The special exception does not apply to any
+ * modifications of the software.
+ * 
+ *      Notwithstanding the above, under no circumstances may you combine this
+ * software in any way with any other Broadcom software provided under a license
+ * other than the GPL, without Broadcom's express prior written consent.
  *
- * $Id: bcmsdh.c 373331 2012-12-07 04:46:22Z $
+ * $Id: bcmsdh.c 373330 2012-12-07 04:46:17Z $
  */
 
 /**
@@ -53,6 +71,26 @@ void
 bcmsdh_enable_hw_oob_intr(bcmsdh_info_t *sdh, bool enable)
 {
 	sdioh_enable_hw_oob_intr(sdh->sdioh, enable);
+}
+#endif
+
+#if defined(HW_OOB)
+#include <sbchipc.h>
+void
+bcmsdh_config_hw_oob_intr(bcmsdh_info_t *sdh, uint chip)
+{
+	uint32 gpiocontrol, addr;
+
+ 	printf("%s: Enter\n", __FUNCTION__);
+	if (CHIPID(chip) == BCM43362_CHIP_ID) {
+		addr = SI_ENUM_BASE + OFFSETOF(chipcregs_t, gpiocontrol);
+		gpiocontrol = bcmsdh_reg_read(sdh, addr, 4);
+		gpiocontrol |= 0x2;
+		bcmsdh_reg_write(sdh, addr, 4, gpiocontrol);
+		bcmsdh_cfg_write(sdh, SDIO_FUNC_1, 0x10005, 0xf, NULL);
+		bcmsdh_cfg_write(sdh, SDIO_FUNC_1, 0x10006, 0x0, NULL);
+		bcmsdh_cfg_write(sdh, SDIO_FUNC_1, 0x10007, 0x2, NULL);
+	}
 }
 #endif
 
@@ -398,10 +436,8 @@ bcmsdh_reg_read(void *sdh, uint32 addr, uint size)
 
 	ASSERT(bcmsdh->init_success);
 
-	if (bcmsdhsdio_set_sbaddr_window(bcmsdh, addr, FALSE)) {
-		bcmsdh->regfail = TRUE; // terence 20130621: prevent dhd_dpc in dead lock
+	if (bcmsdhsdio_set_sbaddr_window(bcmsdh, addr, FALSE))
 		return 0xFFFFFFFF;
-	}
 
 	addr &= SBSDIO_SB_OFT_ADDR_MASK;
 	if (size == 4)
@@ -449,10 +485,8 @@ bcmsdh_reg_write(void *sdh, uint32 addr, uint size, uint32 data)
 
 	ASSERT(bcmsdh->init_success);
 
-	if ((err = bcmsdhsdio_set_sbaddr_window(bcmsdh, addr, FALSE))) {
-		bcmsdh->regfail = TRUE; // terence 20130621:
+	if ((err = bcmsdhsdio_set_sbaddr_window(bcmsdh, addr, FALSE)))
 		return err;
-	}
 
 	addr &= SBSDIO_SB_OFT_ADDR_MASK;
 	if (size == 4)
@@ -714,10 +748,10 @@ bcmsdh_gpioout(void *sdh, uint32 gpio, bool enab)
 
 #ifdef BCMSDIOH_TXGLOM
 void
-bcmsdh_glom_post(void *sdh, uint8 *frame, void *pkt, uint len)
+bcmsdh_glom_post(void *sdh, uint8 *frame, uint len)
 {
 	bcmsdh_info_t *bcmsdh = (bcmsdh_info_t *)sdh;
-	sdioh_glom_post(bcmsdh->sdioh, frame, pkt, len);
+	sdioh_glom_post(bcmsdh->sdioh, frame, len);
 }
 
 void

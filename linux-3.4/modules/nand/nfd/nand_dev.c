@@ -35,6 +35,7 @@ int remove_nand(struct nand_blk_ops *tr);
 
 extern unsigned long long time_used;
 
+
 /*****************************************************************************
 *Name         :
 *Description  :
@@ -217,6 +218,9 @@ int add_nand(struct nand_blk_ops *tr, struct _nand_phy_partition* phy_partition)
 	struct nand_kobject* nand_kobj;
 	uint16 PartitionNO;
 
+//    struct timeval tpstart,tpend;
+//	do_gettimeofday(&tpstart);
+
     PartitionNO = get_partitionNO(phy_partition);
 
     nftl_blk = kmalloc(sizeof(struct _nftl_blk), GFP_KERNEL);
@@ -232,6 +236,9 @@ int add_nand(struct nand_blk_ops *tr, struct _nand_phy_partition* phy_partition)
         nand_dbg_err("nftl_initialize failed\n");
         return 1;
     }
+
+//	do_gettimeofday(&tpend);
+//	time_used += (tpend.tv_sec-tpstart.tv_sec)*1000000+tpend.tv_usec-tpstart.tv_usec;
 
     nftl_blk->blk_lock = kmalloc(sizeof(struct mutex), GFP_KERNEL);
     if (!nftl_blk->blk_lock)

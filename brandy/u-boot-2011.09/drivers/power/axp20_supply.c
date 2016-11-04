@@ -118,8 +118,7 @@ static int axp20_set_dcdc1(int set_vol, int onoff)
 */
 static int axp20_set_dcdc2(int set_vol, int onoff)
 {
- 	u32 vol, tmp;
-	volatile u32 i;
+ 	u32 vol, tmp, i;
     u8  reg_addr, value;
 	if(set_vol == -1)
 	{
@@ -173,7 +172,7 @@ static int axp20_set_dcdc2(int set_vol, int onoff)
         tmp     = value & 0x3f;
         vol     = tmp * 25 + 700;
     }
-	//tick_printf("after set, dcdc2 =%dmv\n",vol);
+	tick_printf("after set, dcdc2 =%dmv\n",vol);
 	
 	return 0;
 }

@@ -27,10 +27,8 @@
 
 #include <asm/u-boot.h>
 
-extern int sunxi_oem_op_lock(int lock_flag, char *info, int force);
-
 extern void sunxi_board_close_source(void);
-extern int sunxi_board_restart(int next_mode);
+extern int sunxi_board_restart(void);
 extern int sunxi_board_shutdown(void);
 extern int sunxi_board_run_fel(void);
 extern int sunxi_board_run_fel_eraly(void);
@@ -68,7 +66,6 @@ extern void board_status_probe(int standby_mode);
 
 extern void power_limit_detect_enter(void);
 extern void power_limit_detect_exit(void);
-extern void power_limit_init(void);
 
 extern int usb_detect_enter(void);
 extern int usb_detect_exit(void);
@@ -101,12 +98,5 @@ extern int checkboard(void);
 
 extern int sprite_uichar_init(int char_size);
 extern void sprite_uichar_printf(const char * str, ...);
-
-extern int check_boot_recovery_key(void);
-
-#if defined(CONFIG_USE_NEON_SIMD)
-extern int  arm_neon_init(void);
-extern uint add_sum_neon(void *buffer, uint length);
-#endif
 
 #endif /*_SUNXI_BOARD_H_ */

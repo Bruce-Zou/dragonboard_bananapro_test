@@ -71,7 +71,6 @@ typedef struct _boot_core_para_t
 extern  int standby_int_init(void);
 extern  int standby_int_exit(void);
 extern  int standby_int_query(void);
-extern int standby_axp_probe_usb(void);
 
 extern  int  standby_clock_store(void);
 extern  int  standby_clock_restore(void);

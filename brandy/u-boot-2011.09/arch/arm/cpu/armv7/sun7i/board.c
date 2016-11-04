@@ -131,13 +131,13 @@ int power_source_init(void)
 	}
 	if(axp_probe() > 0)
 	{
-		axp_probe_factory_mode();
 		if(!axp_probe_power_supply_condition())
 		{
 			if(!axp_set_supply_status(0, PMU_SUPPLY_DCDC2, dcdc2_vol, -1))
 			{
 				tick_printf("PMU: dcdc2 %d\n", dcdc2_vol);
-				sunxi_clock_set_corepll(uboot_spare_head.boot_data.run_clock, dcdc2_vol);
+				pll1 = sunxi_clock_set_corepll(uboot_spare_head.boot_data.run_clock, dcdc2_vol);
+	            tick_printf("PMU: pll1 %d Mhz\n", pll1);
 			}
 			else
 			{
@@ -154,15 +154,12 @@ int power_source_init(void)
 		printf("axp_probe error\n");
 	}
 
-	pll1 = sunxi_clock_get_corepll();
-	tick_printf("PMU: pll1 %d Mhz\n", pll1);
-	
+
     axp_set_charge_vol_limit();
     axp_set_all_limit();
     axp_set_hardware_poweron_vol();
 
 	axp_set_power_supply_output();
-	power_limit_init();
 	return 0;	
 }
 

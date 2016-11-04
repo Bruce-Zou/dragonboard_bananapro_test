@@ -45,8 +45,6 @@
 #include <linux/mutex.h>
 #include <linux/reboot.h>
 #include <linux/kmod.h>
-#include <mach/dram-freq.h>
-
 
 #define __FPGA_TEST__
 #define __LINUX_NAND_SUPPORT_INT__

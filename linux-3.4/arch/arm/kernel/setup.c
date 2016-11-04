@@ -1054,7 +1054,7 @@ static int c_show(struct seq_file *m, void *v)
 	int i;
 #ifdef CONFIG_ARCH_SUN7I
 	struct sw_chip_id chip_id;
-	sw_get_chip_id2(&chip_id);
+	sw_get_chip_id(&chip_id);
 #endif
 
 	seq_printf(m, "Processor\t: %s rev %d (%s)\n",
@@ -1111,9 +1111,8 @@ static int c_show(struct seq_file *m, void *v)
 	seq_printf(m, "Hardware\t: %s\n", machine_name);
 	seq_printf(m, "Revision\t: %04x\n", system_rev);
 #ifdef CONFIG_ARCH_SUN7I
-    seq_printf(m, "Serial\t\t: %03x%08x%08x\n",
+    seq_printf(m, "Serial\t\t: %08x%08x%08x%08x\n", chip_id.sid_rkey3,
 		   chip_id.sid_rkey2, chip_id.sid_rkey1, chip_id.sid_rkey0);
-
 #else
 	seq_printf(m, "Serial\t\t: %08x%08x\n",
 		   system_serial_high, system_serial_low);

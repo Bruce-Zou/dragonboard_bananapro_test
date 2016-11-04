@@ -53,7 +53,7 @@ extern int  sunxi_sprite_phywrite(unsigned int start_block, unsigned int nblock,
 
 
 extern int  nand_get_mbr(char* buffer, uint len);
-extern int  NAND_build_all_partition(void);
+
 
 extern uint sprite_cartoon_create(void);
 extern int  sprite_cartoon_upgrade(int rate);

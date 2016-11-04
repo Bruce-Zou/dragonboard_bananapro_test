@@ -55,6 +55,11 @@ config TOUCHSCREEN_AD7877
 	  To compile this driver as a module, choose M here: the
 	  module will be called ad7877.
 
+config TOUCHSCREEN_USB_XDIRTOUCH
+	tristate "USB XDTouch IrTouchScreen"
+	depends on USB_ARCH_HAS_HCD
+	select USB
+
 config TOUCHSCREEN_AD7879
 	tristate "Analog Devices AD7879-1/AD7889-1 touchscreen interface"
 	help

@@ -138,7 +138,7 @@ def is_str_type(value):
         return (False, "invalid key value, '\"' must come in pairs")
 
     for ch in value:
-        if not ch.isdigit() and not ch.isalpha() and ch != '_':
+        if not ch.isdigit() and not ch.isalpha() and ch != '_' and ch != '-' :
             return (False, "invalid character in key value, using '\"' or 'string:' defines a string instead")
 
     return (True, "valid")
@@ -230,9 +230,9 @@ def check_line_format(conf_lines):
     return True
 
 def check_part_name_valid(name):
-    if len(name) > 0 and len(name) <= 12:
+    if len(name) > 0 and len(name) <= 16:
         for ch in name:
-            if not ch.isalpha() and not ch.isdigit() and ch != '_':
+            if not ch.isalpha() and not ch.isdigit() and ch != '_' and ch != '-':
                 return (False, "invalid character in main key name, must a combination of character, number or '_'")
         return (True, "valid")
     return (False, "invalid length of partition name, 1 ~ 12 characters is recommended")
@@ -440,3 +440,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

@@ -87,18 +87,7 @@ _func_enter_;
 	psta->keep_alive_trycnt = 0;
 
 #endif	// CONFIG_AP_MODE	
-
-#ifdef DBG_TRX_STA_PKTS	
-	psta->tx_be_cnt = 0;
-	psta->tx_bk_cnt = 0;
-	psta->tx_vi_cnt = 0;
-	psta->tx_vo_cnt = 0;
 	
-	psta->rx_be_cnt = 0;
-	psta->rx_bk_cnt = 0;
-	psta->rx_vi_cnt = 0;
-	psta->rx_vo_cnt = 0;
-#endif	
 _func_exit_;	
 
 }

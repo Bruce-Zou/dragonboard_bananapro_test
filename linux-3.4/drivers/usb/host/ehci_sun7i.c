@@ -53,6 +53,7 @@ static u32 ehci_first_probe[3] = {1, 1, 1};
 extern int usb_disabled(void);
 int sw_usb_disable_ehci(__u32 usbc_no);
 int sw_usb_enable_ehci(__u32 usbc_no);
+extern int sw_usb_suspend_disabled(int usbc_no);
 
 void print_ehci_info(struct sw_hci_hcd *sw_ehci)
 {
@@ -639,7 +640,10 @@ static int sw_ehci_hcd_suspend(struct device *dev)
 		DMSG_PANIC("ERR: ehci is null\n");
 		return 0;
 	}
-
+	
+    if(sw_usb_suspend_disabled(sw_ehci->usbc_no))
+        return 0;
+        
  	DMSG_INFO("[%s]: sw_ehci_hcd_suspend\n", sw_ehci->hci_name);
 
 	spin_lock_irqsave(&ehci->lock, flags);
@@ -651,8 +655,11 @@ static int sw_ehci_hcd_suspend(struct device *dev)
 
 	spin_unlock_irqrestore(&ehci->lock, flags);
 
-	sw_stop_ehci(sw_ehci);
-
+	//sw_stop_ehci(sw_ehci);
+    sw_ehci_port_configure(sw_ehci, 0);
+	sw_ehci->usb_passby(sw_ehci, 0);
+	close_ehci_clock(sw_ehci);
+	
 	return 0;
 }
 
@@ -708,10 +715,16 @@ static int sw_ehci_hcd_resume(struct device *dev)
 		return 0;
 	}
 
+    if(sw_usb_suspend_disabled(sw_ehci->usbc_no))
+        return 0;
+        
  	DMSG_INFO("[%s]: sw_ehci_hcd_resume\n", sw_ehci->hci_name);
 
-	sw_start_ehci(sw_ehci);
-
+	//sw_start_ehci(sw_ehci);
+    open_ehci_clock(sw_ehci); 
+	sw_ehci->usb_passby(sw_ehci, 1);	
+	sw_ehci_port_configure(sw_ehci, 1);
+	
 	/* Mark hardware accessible again as we are out of D3 state by now */
 	set_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
 
@@ -892,86 +905,4 @@ int sw_usb_enable_ehci(__u32 usbc_no)
 }
 EXPORT_SYMBOL(sw_usb_enable_ehci);
 
-static u32			enable_bits;
-int sw_pause_ehci(__u32 usbc_no)
-{
-	struct sw_hci_hcd *sw_ehci = NULL;
-    struct ehci_hcd *ehci = NULL;
-    u32			command;
-    u32         status;
-    
-	if(usbc_no != 1 && usbc_no != 2){
-		DMSG_PANIC("ERR:Argmen invalid. usbc_no(%d)\n", usbc_no);
-		return -1;
-	}
-
-	sw_ehci = g_sw_ehci[usbc_no];
-	if(sw_ehci == NULL){
-		DMSG_PANIC("ERR: sw_ehci is null\n");
-		return -1;
-	}		
-
-    if(sw_ehci->probe == 0){
-		DMSG_PANIC("ERR: sw_ehci is disable, can not pause\n");
-		return -1;
-	}
-	
-	//DMSG_INFO("[%s]: sw_pause_ehci\n", sw_ehci->hci_name);
-    ehci = hcd_to_ehci(sw_ehci->hcd);
-    command = ehci_readl(ehci, &ehci->regs->command);
-    //printk("command = %x\n", command);
-    enable_bits = command & (CMD_PSE|CMD_ASE);
-    command &= ~(CMD_PSE|CMD_ASE);
-    //command &= ~CMD_RUN;    
-    ehci_writel(ehci, command, &ehci->regs->command);
-    
-    //if(handshake(ehci, &ehci->regs->status, STS_HALT, STS_HALT, 16 * 125))
-    if(handshake(ehci, &ehci->regs->status, STS_ASS | STS_PSS, 0, 16 * 125))
-        DMSG_INFO("[%s]: pause timeout\n", sw_ehci->hci_name);
-    //else
-        //DMSG_INFO("[%s]: pause completed\n", sw_ehci->hci_name);
-        
-	return 0;
-}
-EXPORT_SYMBOL(sw_pause_ehci);
-
-int sw_restart_ehci(__u32 usbc_no)
-{
-	struct sw_hci_hcd *sw_ehci = NULL;
-    struct ehci_hcd *ehci = NULL;
-    u32			command;
-    u32         status;
-    
-	if(usbc_no != 1 && usbc_no != 2){
-		DMSG_PANIC("ERR:Argmen invalid. usbc_no(%d)\n", usbc_no);
-		return -1;
-	}
-
-	sw_ehci = g_sw_ehci[usbc_no];
-	if(sw_ehci == NULL){
-		DMSG_PANIC("ERR: sw_ehci is null\n");
-		return -1;
-	}			
-
-    if(sw_ehci->probe == 0){
-		DMSG_PANIC("ERR: sw_ehci is disable, can not restart\n");
-		return -1;
-	}
-	
-	//DMSG_INFO("[%s]: sw_restart_ehci\n", sw_ehci->hci_name);
-    ehci = hcd_to_ehci(sw_ehci->hcd);
-    command = ehci_readl(ehci, &ehci->regs->command);
-    command |= enable_bits;
-    //command |= CMD_RUN;    
-    ehci_writel(ehci, command, &ehci->regs->command);
-    //printk("command = %x\n", ehci_readl(ehci, &ehci->regs->command));    
-
-    if(handshake(ehci, &ehci->regs->status, STS_ASS | STS_PSS, enable_bits << 10, 16 * 125))
-        DMSG_INFO("[%s]: restart timeout\n", sw_ehci->hci_name);
-    //else
-       // DMSG_INFO("[%s]: restart completed\n", sw_ehci->hci_name);
-    
-	return 0;
-}
-EXPORT_SYMBOL(sw_restart_ehci);
 

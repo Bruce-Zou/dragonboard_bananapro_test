@@ -94,7 +94,7 @@ int sunxi_pwm_set_polarity(int pwm, enum pwm_polarity polarity)
 {
     uint temp;
 
-    #if ((defined CONFIG_ARCH_SUN8IW1P1) || (defined CONFIG_ARCH_SUN9IW1P1)  || (defined CONFIG_ARCH_SUN8IW5P1) )
+    #if ((defined CONFIG_ARCH_SUN8IW1P1) || (defined CONFIG_ARCH_SUN9IW1P1))
 
     temp = sunxi_pwm_read_reg(pwm * 0x10);
 
@@ -124,7 +124,7 @@ int sunxi_pwm_set_polarity(int pwm, enum pwm_polarity polarity)
             else
                 temp &= ~(1 << 20);
             }
-	#elif (defined CONFIG_ARCH_SUN7I) || (defined CONFIG_ARCH_SUN5I)
+	#elif (defined CONFIG_ARCH_SUN7IW1P1)
 
 	temp = sunxi_pwm_read_reg(0x200);
     	if(polarity == PWM_POLARITY_NORMAL) {
@@ -142,7 +142,6 @@ int sunxi_pwm_set_polarity(int pwm, enum pwm_polarity polarity)
             }
 	sunxi_pwm_write_reg(0x200,temp);
     #endif
-
     return 0;
 }
 
@@ -199,7 +198,7 @@ int sunxi_pwm_config(int pwm, int duty_ns, int period_ns)
     pwm_debug("PWM _TEST: duty_ns=%d, period_ns=%d, freq=%d, per_scal=%d, period_reg=0x%x\n", duty_ns, period_ns, freq, pre_scal_id, temp);
 
 
-#elif (defined CONFIG_ARCH_SUN8IW3P1 ||  (defined CONFIG_ARCH_SUN8IW5P1))
+#elif (defined CONFIG_ARCH_SUN8IW3P1) 
 
     uint pre_scal[11][2] = {{15, 1}, {0, 120}, {1, 180}, {2, 240}, {3, 360}, {4, 480}, {8, 12000}, {9, 24000}, {10, 36000}, {11, 48000}, {12, 72000}};
     uint freq;
@@ -247,7 +246,7 @@ int sunxi_pwm_config(int pwm, int duty_ns, int period_ns)
 
     pwm_debug("PWM _TEST: duty_ns=%d, period_ns=%d, freq=%d, per_scal=%d, period_reg=0x%x\n", duty_ns, period_ns, freq, pre_scal_id, temp);
 
-#elif (defined CONFIG_ARCH_SUN7I) || (defined CONFIG_ARCH_SUN5I)
+#elif (defined CONFIG_ARCH_SUN7IW1P1) 
 
    __u32 pre_scal[10] = {120, 180, 240, 360, 480, 12000, 24000, 36000, 48000, 72000};
     __u32 pre_scal_id = 0, entire_cycle = 256, active_cycle = 192;
@@ -280,8 +279,8 @@ int sunxi_pwm_config(int pwm, int duty_ns, int period_ns)
 	            tmp = pwm_freq;
 	            pre_scal_id = i;
 	            entire_cycle = 256;
-                pwm_debug("pre_scal:%d, entire_cycle:%d, pwm_freq:%d\n", pre_scal[i], 256, pwm_freq);
-                pwm_debug("----%d\n", tmp);
+	            pwm_debug("pre_scal:%d, entire_cycle:%d, pwm_freq:%d\n", pre_scal[i], 256, pwm_freq);
+	            pwm_debug("----%d\n", tmp);
 	        }
     	}
 	}
@@ -295,7 +294,7 @@ if(pre_scal_id >= 5)
     if(pwm == 0)
     {
         sunxi_pwm_write_reg(0x204, ((entire_cycle - 1)<< 16) | active_cycle);
-
+        
         tmp = sunxi_pwm_read_reg(0x200) & 0xfffffff0;
         tmp |=  pre_scal_id;//bit6:gatting the special clock for pwm0; bit5:pwm0  active state is high level
         sunxi_pwm_write_reg(0x200,tmp);
@@ -303,7 +302,7 @@ if(pre_scal_id >= 5)
     else
     {
         sunxi_pwm_write_reg(0x208, ((entire_cycle - 1)<< 16) | active_cycle);
-
+        
         tmp = sunxi_pwm_read_reg(0x200) & 0xfff87fff;
         tmp |=  (pre_scal_id<<15);//bit21:gatting the special clock for pwm1; bit20:pwm1  active state is high level
         sunxi_pwm_write_reg(0x200,tmp);
@@ -336,7 +335,7 @@ int sunxi_pwm_enable(int pwm)
 
 #endif
 
-#if ((defined CONFIG_ARCH_SUN8IW1P1) || (defined CONFIG_ARCH_SUN9IW1P1) || (defined CONFIG_ARCH_SUN8IW5P1))
+#if ((defined CONFIG_ARCH_SUN8IW1P1) || (defined CONFIG_ARCH_SUN9IW1P1))
 
     temp = sunxi_pwm_read_reg(pwm * 0x10);
 
@@ -345,7 +344,7 @@ int sunxi_pwm_enable(int pwm)
 
     sunxi_pwm_write_reg(pwm * 0x10, temp);
 
-#elif (defined CONFIG_ARCH_SUN8IW3P1 || (defined CONFIG_ARCH_SUN8IW5P1) )
+#elif (defined CONFIG_ARCH_SUN8IW3P1)
 
     temp = sunxi_pwm_read_reg(0);
 
@@ -358,8 +357,8 @@ int sunxi_pwm_enable(int pwm)
             }
 
     sunxi_pwm_write_reg(0, temp);
-
-#elif (defined CONFIG_ARCH_SUN7I) || (defined CONFIG_ARCH_SUN5I)
+	
+#elif (defined CONFIG_ARCH_SUN7IW1P1)
 
 	temp = sunxi_pwm_read_reg(0x200);
 
@@ -408,7 +407,7 @@ void sunxi_pwm_disable(int pwm)
 
     sunxi_pwm_write_reg(pwm * 0x10, temp);
 
-#elif (defined CONFIG_ARCH_SUN8IW3P1 || (defined CONFIG_ARCH_SUN8IW5P1))
+#elif (defined CONFIG_ARCH_SUN8IW3P1)
 
     temp = sunxi_pwm_read_reg(0);
 
@@ -420,7 +419,7 @@ void sunxi_pwm_disable(int pwm)
             temp &= ~(1 << 21);
             }
 
-#elif (defined CONFIG_ARCH_SUN7I) || (defined CONFIG_ARCH_SUN5I)
+#elif (defined CONFIG_ARCH_SUN7IW1P1)
 
 	temp = sunxi_pwm_read_reg(0x200);
 

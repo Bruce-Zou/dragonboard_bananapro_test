@@ -204,56 +204,24 @@ int do_boota_linux (struct fastboot_boot_img_hdr *hdr)
 #endif
 #ifdef CONFIG_CMDLINE_TAG
 	if(strlen((const char *)hdr->cmdline)) {
-		char *s = getenv("partitions");
-		char *sig = getenv("signature");
+        char *s = getenv("partitions");
 		char data[16] = {0};
-
-		memset(data, 0, 16);
 
         strcat((char *)hdr->cmdline, " boot_type=");
         sprintf(data, "%d", uboot_spare_head.boot_data.storage_type);
         strcat((char *)hdr->cmdline, data);
-
-		if(sig != NULL)
-		{
-			strcat((char *)hdr->cmdline, " signature=");
-			strcat((char *)hdr->cmdline, sig);
-        }
-
-		if(gd->chargemode == 1)
-		{
-			strcat((char *)hdr->cmdline, " androidboot.mode=");
-			strcat((char *)hdr->cmdline, "charger");
-		}
 
 		strcat((char *)hdr->cmdline, " partitions=");
         strcat((char *)hdr->cmdline, s);
 
 		setup_commandline_tag (bd, (char *)hdr->cmdline);
 	} else {
-		char *s = getenv("partitions");
-		char *sig = getenv("signature");
-		char cmdline[512];
 		char data[16] = {0};
 
-		memset(cmdline, 0, 512);
-		memset(data, 0, 16);
-
-		strcpy(cmdline, commandline);
-
-		strcat(cmdline, " boot_type=");
+        strcat(commandline, " boot_type=");
         sprintf(data, "%d", uboot_spare_head.boot_data.storage_type);
-        strcat(cmdline, data);
-
-		if(sig != NULL)
-		{	strcat(cmdline, " signature=");
-			strcat(cmdline, sig);
-        }
-
-		strcat(cmdline, " partitions=");
-        strcat(cmdline, s);
-
-		setup_commandline_tag (bd, cmdline);
+        strcat(commandline, data);
+		setup_commandline_tag (bd, commandline);
 	}
 #endif
 #ifdef CONFIG_INITRD_TAG

@@ -281,7 +281,7 @@ static __inline __s32 Hal_Set_Frame(__u32 sel, __u32 tcon_index, __u32 id)
 
             DE_SCAL_Set_3D_Ctrl(scaler_index, scaler->b_trd_out, inmode, outmode);
             
-            printk("[%s]trd_parallax: %d \n", __FUNCTION__, gdisp.trd_parallax[sel]);
+            //printk("[%s]trd_parallax: %d \n", __FUNCTION__, gdisp.trd_parallax[sel]);
             DE_SCAL_Config_3D_Src(scaler_index, &scal_addr, &in_size, &in_type, inmode, 
                                                 &scal_addr_right, gdisp.trd_parallax[sel]);
         }

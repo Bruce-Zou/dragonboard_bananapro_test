@@ -58,6 +58,7 @@ modules.builtin
 !.gitignore
 !.mailmap
 !drivers/input/sw_touchscreen/ft5x/ft_app.i
+!drivers/input/sw_touchscreen/libAW5306.a
 
 #
 # Generated include files

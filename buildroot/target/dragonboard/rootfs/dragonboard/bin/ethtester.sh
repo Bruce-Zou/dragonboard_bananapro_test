@@ -8,19 +8,19 @@ module_args=`script_fetch "ethernet" "module_args"`
 
 eth_try=0
 
-#if [ -z "$module_path" ]; then
-#    echo "ethernet driver buildin"
-#else
-#    echo "insmod $module_path $module_args"
-#    insmod "$module_path" "$module_args"
-#    if [ $? -ne 0 ]; then
-#        SEND_CMD_PIPE_FAIL $3
-#        exit 1
-#    fi
-#fi
+if [ -z "$module_path" ]; then
+    echo "ethernet driver buildin"
+else
+    echo "insmod $module_path $module_args"
+    insmod "$module_path" "$module_args"
+    if [ $? -ne 0 ]; then
+        SEND_CMD_PIPE_FAIL $3
+        exit 1
+    fi
+fi
 
 for j in `seq 3`;do
-#	if ifconfig -a | grep eth0; then
+	if ifconfig -a | grep eth0; then
 	    # enable eth0
 	    for i in `seq 3`; do
 	        ifconfig eth0 up > /dev/null
@@ -31,7 +31,7 @@ for j in `seq 3`;do
 	        fi
 	        if [ $? -ne 0 ]; then
 	            echo "ifconfig eth0 up failed, try again 1s later"
-#	            sleep 1
+	            sleep 1
 	        else
 	            echo "ifconfig eth0 up done"
 	            break
@@ -51,6 +51,8 @@ for j in `seq 3`;do
 	        fi
 	    done
 	    
+	    sleep 1
+	    
 	    for i in `seq 3`; do
 	        udhcpc -i eth0 > /dev/null
 	        if [ $? -ne 0 -a $i -eq 3 ]; then
@@ -67,27 +69,27 @@ for j in `seq 3`;do
 	        fi
 	    done
 	    
-#	        ping -w 3 www.baidu.com > /dev/null
-#	        if [ $? -ne 0] ; then
-#	            SEND_CMD_PIPE_FAIL $3
-#	            exit 1
-#	        fi
+	        ping -w 3 www.baidu.com > /dev/null
+	        if [ $? -ne 0] ; then
+	            SEND_CMD_PIPE_FAIL $3
+	            exit 1
+	        fi
 
 	        # disable eth0
-#	        ifconfig eth0 down
-#	        if [ $? -ne 0 ]; then
-#	            SEND_CMD_PIPE_FAIL $3
-#	            exit 1
-#	        fi
+	        ifconfig eth0 down
+	        if [ $? -ne 0 ]; then
+	            SEND_CMD_PIPE_FAIL $3
+	            exit 1
+	        fi
 
 	        # test done
 	        SEND_CMD_PIPE_OK $3
 	        exit 0
 	
-#	else
-#	    echo "eth0 not found, try it again later"
-#	    sleep 1
-#	fi
+	else
+	    echo "eth0 not found, try it again later"
+	    sleep 1
+	fi
 done
 
 # test failed

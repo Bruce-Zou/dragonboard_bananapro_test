@@ -365,7 +365,6 @@ struct dma_slave_config {
 	u32 src_maxburst;
 	u32 dst_maxburst;
 	bool device_fc;
-	unsigned int slave_id;
 };
 
 static inline const char *dma_chan_name(struct dma_chan *chan)

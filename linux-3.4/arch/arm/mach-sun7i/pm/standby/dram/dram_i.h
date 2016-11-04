@@ -60,7 +60,6 @@
 #define SDR_DQSTR1			(DRAMC_IO_BASE + 0x22c)
 #define SDR_CR				(DRAMC_IO_BASE + 0x230)
 #define SDR_CFSR			(DRAMC_IO_BASE + 0x234)
-#define SDR_BANDWIDTH (DRAMC_IO_BASE + 0x238)
 #define SDR_DPCR			(DRAMC_IO_BASE + 0x23c)
 #define SDR_APR  			(DRAMC_IO_BASE + 0x240)
 #define SDR_LTR	  			(DRAMC_IO_BASE + 0x244)
@@ -95,7 +94,6 @@
 #define DRAM_CCM_GPS_CLK_REG      (DRAM_CCM_BASE + 0xd0)
 #define DRAM_CCM_SDRAM_CLK_REG    (DRAM_CCM_BASE + 0x100)
 #define DRAM_CCM_MUS_CLK_REG      (DRAM_CCM_BASE + 0x15c)
-#define DRAM_CCM_SDRAM_PLL_TUN2          (DRAM_CCM_BASE + 0x3c)
 
 //TIMER register for system
 #ifdef DRAM_USE_VA_ADDR
@@ -104,7 +102,6 @@
 #define DRAM_TIMER_BASE     SW_PA_TIMERC_IO_BASE
 #endif
 #define TIMER_CPU_CFG_REG   (DRAM_TIMER_BASE + 0x13c)
-typedef  standy_dram_para_t               __dram_para_t;
 
 
 extern void 	DRAMC_clock_output_en(__u32 on);
@@ -119,7 +116,6 @@ extern void mctl_enable_dllx(__u32 phase);
 extern void mctl_disable_dll(void);
 extern void DRAMC_hostport_on_off(__u32 port_idx, __u32 on);
 extern __s32 init_DRAM(standy_dram_para_t *boot0_para);
-__s32   dram_freq_jum(unsigned char freq_p, __dram_para_t *dram_para);
 
 
 #endif  //__DRAM_REG_H__

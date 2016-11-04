@@ -264,18 +264,6 @@ struct sta_info {
 	u32 assoc_req_len;
 #endif
 
-#ifdef DBG_TRX_STA_PKTS
-	//per AC dbg irp cnts
-	int rx_be_cnt;
-	int rx_bk_cnt;
-	int rx_vi_cnt;
-	int rx_vo_cnt;
-	//per AC dbg irp cnts
-	int tx_be_cnt;
-	int tx_bk_cnt;
-	int tx_vi_cnt;
-	int tx_vo_cnt;
-#endif
 	//for DM
 	RSSI_STA	 rssi_stat;
 	

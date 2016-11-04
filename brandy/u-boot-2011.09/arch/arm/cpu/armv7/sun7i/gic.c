@@ -77,25 +77,18 @@ int irq_enable(int irq_no)
 	uint reg_val;
 	uint offset;
 
-
 	if (irq_no >= GIC_IRQ_NUM)
 	{
 		printf("irq NO.(%d) > GIC_IRQ_NUM(%d) !!\n", irq_no, GIC_IRQ_NUM);
 		return -1;
 	}
 
-	if(irq_no == AW_IRQ_NMI)
-	{
-		*(volatile unsigned int *)(0x01c00034) |= 1;//clean the NMI pendding
-		*(volatile unsigned int *)(0x01c00038) |= 1;//enable the NMI irq
-	}
-
 	offset   = irq_no >> 5; // ³ý32
 	reg_val  = readl(GIC_SET_EN(offset));
 	reg_val |= 1 << (irq_no & 0x1f);
 	writel(reg_val, GIC_SET_EN(offset));
-	
-        return 0;
+
+	return 0;
 }
 /*
 ************************************************************************************************************
@@ -122,12 +115,6 @@ int irq_disable(int irq_no)
 	{
 		printf("irq NO.(%d) > GIC_IRQ_NUM(%d) !!\n", irq_no, GIC_IRQ_NUM);
 		return -1;
-	}
-
-	if(irq_no == AW_IRQ_NMI)
-	{
-		*(volatile unsigned int *)(0x01c00034) |= 1;//enable the NMI irq
-		*(volatile unsigned int *)(0x01c00038) &= ~1;//disable the NMI irq
 	}
 
 	offset   = irq_no >> 5; // ³ý32
@@ -326,16 +313,11 @@ void do_irq (struct pt_regs *pt_regs)
 	else
 		gic_spi_handler(idnum);
 
-	if(idnum == AW_IRQ_NMI)
-	{
-		*(volatile unsigned int *)(0x01c00034) |= 1;
-	}
-
 	writel(idnum, GIC_END_INT_REG);
 	writel(idnum, GIC_DEACT_INT_REG);
 	gic_clear_pending(idnum);
 
-	return;	
+	return;
 }
 #endif
 /*
@@ -470,6 +452,7 @@ int arch_interrupt_init (void)
 	{
 		sunxi_int_handlers[i].m_data = default_isr;
 	}
+
 	gic_distributor_init();
 	gic_cpuif_init();
 

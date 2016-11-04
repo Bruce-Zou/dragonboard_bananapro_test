@@ -62,7 +62,6 @@ RESUME1_OBJ =	./super/common.o             \
 		./../mem_printk.o  		\
 		./../pm_debug.o       		\
 		./../mem_timing.o       	        \
-		./../mem_tmr.o      \
 		./../mem_divlibc.o		\
 		./../mem_divlib.o	 
 	
@@ -190,7 +189,6 @@ resume1:
 	$(CC) $(INCLUDE) $(CFLAGS) ./../mem_cpu.c		       -o ./../mem_cpu.o
 	$(CC) $(INCLUDE) $(CFLAGS) ./../mem_serial.c    		-o ./../mem_serial.o 
 	$(CC) $(INCLUDE) $(CFLAGS) ./../mem_printk.c    		-o ./../mem_printk.o
-	$(CC) $(INCLUDE) $(CFLAGS) ./../mem_tmr.c    		    -o ./../mem_tmr.o
 	$(CC) $(INCLUDE) $(CFLAGS) ./../mem_divlib.S    -o 		./../mem_divlib.o 
 	$(CC) $(INCLUDE) $(CFLAGS) ./../mem_divlibc.c    -o 		./../mem_divlibc.o 
 	

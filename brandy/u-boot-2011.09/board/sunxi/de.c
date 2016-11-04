@@ -32,9 +32,6 @@ DECLARE_GLOBAL_DATA_PTR;
 extern __s32 disp_delay_ms(__u32 ms);
 int board_display_layer_request(void)
 {
-#ifdef CONFIG_ARCH_SUN9IW1P1
-	return 0;
-#else
 	__u32 arg[4];
 
 	arg[0] = 0;
@@ -49,7 +46,6 @@ int board_display_layer_request(void)
 	}
 
 	return 0;
-#endif
 }
 /*
 ************************************************************************************************************
@@ -69,9 +65,6 @@ int board_display_layer_request(void)
 */
 int board_display_layer_release(void)
 {
-#ifdef CONFIG_ARCH_SUN9IW1P1
-	return 0;
-#else
 	__u32 arg[4];
 
 	if(gd->layer_hd == 0)
@@ -85,7 +78,6 @@ int board_display_layer_release(void)
 	arg[1] = gd->layer_hd;
 
 	return disp_ioctl(NULL, DISP_CMD_LAYER_RELEASE, (void*)arg);
-#endif
 }
 /*
 ************************************************************************************************************
@@ -204,11 +196,7 @@ int board_display_set_exit_mode(int lcd_off_only)
 	}
 	else
 	{
-#ifndef CONFIG_ARCH_SUN9IW1P1
 		disp_ioctl(NULL, DISP_CMD_LCD_OFF, (void *)arg);
-#else
-		disp_ioctl(NULL, DISP_CMD_LCD_DISABLE, (void *)arg);
-#endif
 		board_display_wait_lcd_close();
 	}
 
@@ -241,11 +229,7 @@ int board_display_layer_open(void)
 	arg[1] = gd->layer_hd;
 	arg[2] = 0;
 	arg[3] = 0;
-#ifndef CONFIG_ARCH_SUN9IW1P1
 	disp_ioctl(NULL,DISP_CMD_LAYER_OPEN,(void*)arg);
-#else
-	disp_ioctl(NULL,DISP_CMD_LAYER_ENABLE,(void*)arg);
-#endif
 
     return 0;
 }
@@ -278,11 +262,7 @@ int board_display_layer_close(void)
 	arg[1] = gd->layer_hd;
 	arg[2] = 0;
 	arg[3] = 0;
-#ifndef CONFIG_ARCH_SUN9IW1P1
 	disp_ioctl(NULL,DISP_CMD_LAYER_CLOSE,(void*)arg);
-#else
-	disp_ioctl(NULL,DISP_CMD_LCD_DISABLE,(void*)arg);
-#endif
 
     return 0;
 }
@@ -307,18 +287,10 @@ int board_display_layer_para_set(void)
     uint arg[4];
 
 	arg[0] = 0;
-#ifndef CONFIG_ARCH_SUN9IW1P1
 	arg[1] = gd->layer_hd;
-#else
-	arg[1] = 0;
-#endif
 	arg[2] = gd->layer_para;
 	arg[3] = 0;
-#ifndef CONFIG_ARCH_SUN9IW1P1
 	disp_ioctl(NULL,DISP_CMD_LAYER_SET_PARA,(void*)arg);
-#else
-	disp_ioctl(NULL,DISP_CMD_LAYER_SET_INFO,(void*)arg);
-#endif
 
     return 0;
 }
@@ -390,7 +362,6 @@ int board_display_show(int display_source)
 */
 int board_display_framebuffer_set(int width, int height, int bitcount, void *buffer)
 {
-#ifndef CONFIG_ARCH_SUN9IW1P1
     __disp_layer_info_t *layer_para;
 	uint screen_width, screen_height;
 	uint arg[4];
@@ -440,49 +411,6 @@ int board_display_framebuffer_set(int width, int height, int bitcount, void *buf
 	layer_para->scn_win.height	= height;
 	layer_para->b_trd_out		= 0;
 	layer_para->out_trd_mode 	= 0;
-#else
-	disp_layer_info *layer_para;
-	uint screen_width, screen_height;
-	uint arg[4];
-
-	if(!gd->layer_para)
-	{
-		layer_para = (disp_layer_info *)malloc(sizeof(disp_layer_info));
-		if(!layer_para)
-		{
-			tick_printf("sunxi display error: unable to malloc memory for layer\n");
-
-			return -1;
-		}
-	}
-	else
-	{
-		layer_para = (disp_layer_info *)gd->layer_para;
-	}
-	arg[0] = 0;
-	screen_width = disp_ioctl(NULL, DISP_CMD_GET_SCN_WIDTH, (void*)arg);
-	screen_height = disp_ioctl(NULL, DISP_CMD_GET_SCN_HEIGHT, (void*)arg);
-	debug("screen_width =%d, screen_height =%d\n", screen_width, screen_height);
-	memset((void *)layer_para, 0, sizeof(disp_layer_info));
-	layer_para->fb.addr[0]		= (uint)buffer;
-	debug("frame buffer address %x\n", (uint)buffer);
-	layer_para->fb.size.width	= width;
-	layer_para->fb.size.height	= height;
-	debug("bitcount = %d\n", bitcount);
-	layer_para->fb.b_trd_src 	= 0;
-	layer_para->fb.trd_mode		= 0;
-	layer_para->ck_enable		= 0;
-	layer_para->mode            = DISP_LAYER_WORK_MODE_NORMAL;
-	layer_para->alpha_mode 		= 1;
-	layer_para->alpha_value		= 0xff;
-	layer_para->pipe 			= 0;
-	layer_para->screen_win.x		= (screen_width - width) / 2;
-	layer_para->screen_win.y		= (screen_height - height) / 2;
-	layer_para->screen_win.width	= width;
-	layer_para->screen_win.height	= height;
-	layer_para->b_trd_out		= 0;
-	layer_para->out_trd_mode 	= 0;
-#endif
 
 	gd->layer_para = (uint)layer_para;
 
@@ -491,9 +419,6 @@ int board_display_framebuffer_set(int width, int height, int bitcount, void *buf
 
 int board_display_framebuffer_change(void *buffer)
 {
-#ifdef CONFIG_ARCH_SUN9IW1P1
-	return 0;
-#else
     uint arg[4];
 	__disp_fb_t disp_fb;
 	__disp_layer_info_t *layer_para = (__disp_layer_info_t *)gd->layer_para;
@@ -524,12 +449,10 @@ int board_display_framebuffer_change(void *buffer)
 	layer_para->fb.addr[0] = (uint)buffer;
 
 	return 0;
-#endif
 }
 
 int board_display_device_open(void)
 {
-#ifndef CONFIG_ARCH_SUN9IW1P1
 	int  value = 1;
 	int  ret = 0;
 	__u32 output_type = 0;
@@ -690,11 +613,12 @@ int board_display_device_open(void)
 			debug("------DISP_TV_CVBS-----\n");
                     }else if((ret & DISP_TV_YPBPR) == DISP_TV_YPBPR)
                     {
-
+                        
                             output_type = DISP_OUTPUT_TYPE_VGA;
                             output_mode = DISP_VGA_H1024_V768;
 			debug("------DISP_TV_YPBPR-----\n");
 
+                        
                     }else
                     {
                         output_type = DISP_OUTPUT_TYPE_NONE;
@@ -743,24 +667,6 @@ int board_display_device_open(void)
 		disp_ioctl(NULL, DISP_CMD_VGA_SET_MODE, (void *)arg);
 		ret = disp_ioctl(NULL, DISP_CMD_VGA_ON, (void *)arg);
 	}
-#else
-	int  ret = 0;
-	__u32 output_type = 0;
-	unsigned long arg[4] = {0};
-	output_type = DISP_OUTPUT_TYPE_LCD;
-	if(output_type == DISP_OUTPUT_TYPE_LCD)
-	{
-		debug("lcd open\n");
-		arg[0] = 0;
-		arg[1] = 0;
-		arg[2] = 0;
-		ret = disp_ioctl(NULL, DISP_CMD_LCD_ENABLE, (void*)arg);
-		debug("lcd open,ret=%d\n",ret);
-	}
-	else if(output_type == DISP_OUTPUT_TYPE_HDMI)
-	{
-	}
-#endif
 	return ret;
 }
 

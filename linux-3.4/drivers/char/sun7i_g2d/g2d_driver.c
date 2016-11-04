@@ -1,7 +1,6 @@
 #include"g2d_driver_i.h"
 #include<mach/platform.h>
 #include<linux/g2d_driver.h>
-#include <linux/sunxi_physmem.h>
 #include"g2d.h"
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
@@ -109,21 +108,17 @@ __s32 drv_g2d_init(void)
     init_waitqueue_head(&g2d_ext_hd.queue);
 	g2d_init(&init_para);
 
-#ifdef __FPGA_DEBUG_G2D__
 if(g2d_size !=0){
     INFO("g2dmem: g2d_start=%x, g2d_size=%x\n", (unsigned int)g2d_start, (unsigned int)g2d_size);
     g_virt_base = (unsigned long)ioremap_nocache(g2d_start, g2d_size);
     g2d_create_heap(g_virt_base, g2d_size);
 }
-#endif
 
     return 0;
 }
 
-void *g2d_malloc(__u32 bytes_num, __u32 *phy_addr)
+void *g2d_malloc(__u32 bytes_num)
 {
-#ifdef __FPGA_DEBUG_G2D__
-
 	__u32 actual_bytes;
 	struct g2d_alloc_struct *ptr, *newptr;
 	
@@ -161,35 +156,19 @@ void *g2d_malloc(__u32 bytes_num, __u32 *phy_addr)
     ptr->next       = newptr;
 
     return (void *)newptr->address;
-#else
-	__u32 actual_bytes;
-	__u32 address;
-	if(0!= bytes_num)
-	{
-		actual_bytes = G2D_BYTE_ALIGN(bytes_num);
-		address = sunxi_mem_alloc(actual_bytes);
-		if(address)
-		{
-			*phy_addr = address;
-			return (void *)ioremap((unsigned int)address,actual_bytes);
 }
-		INFO("sunxi_mem_alloc fail,size=0x%x\n",bytes_num);
-	}
-	return 0;
-#endif
-}
-void g2d_free(void *virt_addr, void *phy_addr, unsigned int size)
+
+void g2d_free(void *p)
 {
-#ifdef __FPGA_DEBUG_G2D__
     struct g2d_alloc_struct *ptr, *prev;
 
-	if( virt_addr == NULL )
+	if( p == NULL )
 		return;
 
     ptr = &boot_heap_head;						/* look for the node which po__s32 this memory block                   */
     while (ptr && ptr->next)
     {
-        if (ptr->next->address == (__u32)virt_addr)
+        if (ptr->next->address == (__u32)p)
             break;								/* find the node which need to be release                              */
         ptr = ptr->next;
     }
@@ -201,17 +180,6 @@ void g2d_free(void *virt_addr, void *phy_addr, unsigned int size)
     prev->next = ptr->next;						/* delete the node which need be released from the memory block chain  */
 
     return;
-#else
-	if(virt_addr)
-	{
-		iounmap(virt_addr);
-	}
-	if(phy_addr)
-	{
-		sunxi_mem_free((unsigned int)phy_addr);
-	}
-	return;
-#endif
 }
 
 __s32 g2d_get_free_mem_index(void)
@@ -230,7 +198,6 @@ __s32 g2d_get_free_mem_index(void)
 
 int g2d_mem_request(__u32 size)
 {
-#ifdef __FPGA_DEBUG_G2D__
 if (g2d_size ==0){
 	__s32		 sel;
 	struct page	*page;
@@ -243,7 +210,7 @@ if (g2d_size ==0){
         return -EINVAL;
     }
 
-	map_size = (size + 4095) & 0xfffff000;//4k
+	map_size = (size + 4095) & 0xfffff000;//4k ????
 	page = alloc_pages(GFP_KERNEL,get_order(map_size));
 
 	if(page != NULL)
@@ -269,10 +236,9 @@ if (g2d_size ==0){
 		return -ENOMEM;
 	}
 }
-#endif
+else{
 	__s32 sel;
 	__u32 ret = 0;
-	__u32 phy_addr;
 	
     sel = g2d_get_free_mem_index();
     if(sel < 0)
@@ -281,15 +247,12 @@ if (g2d_size ==0){
         return -EINVAL;
     }
     	
-	ret = (__u32)g2d_malloc(size,&phy_addr);
+	ret = (__u32)g2d_malloc(size);
 	if(ret != 0)
 	{
 	    g2d_mem[sel].virt_addr = (void*)ret;
 	    memset(g2d_mem[sel].virt_addr,0,size);
-	    g2d_mem[sel].phy_addr = phy_addr;
-#ifdef __FPGA_DEBUG_G2D__
 		g2d_mem[sel].phy_addr = g2d_virt_to_phys(g2d_mem[sel].virt_addr);
-#endif
 		g2d_mem[sel].mem_len = size;
 		g2d_mem[sel].b_used = 1;
 
@@ -301,12 +264,11 @@ if (g2d_size ==0){
 		ERR("fail to alloc reserved memory!\n");
 		return -ENOMEM;		
 	}
-
+}
 }
 
 int g2d_mem_release(__u32 sel)
 {
-#ifdef __FPGA_DEBUG_G2D__
 if(g2d_size ==0){
 	unsigned map_size = PAGE_ALIGN(g2d_mem[sel].mem_len);
 	unsigned page_size = map_size;
@@ -320,7 +282,7 @@ if(g2d_size ==0){
 	free_pages((unsigned long)(g2d_mem[sel].virt_addr),get_order(page_size));
 	memset(&g2d_mem[sel],0,sizeof(struct info_mem));
 }
-#endif
+else{
 
 	if(g2d_mem[sel].b_used == 0)
 	{
@@ -328,8 +290,9 @@ if(g2d_size ==0){
 		return -EINVAL;
     }
 
-	g2d_free((void *)g2d_mem[sel].virt_addr,(void *)g2d_mem[sel].phy_addr,g2d_mem[sel].mem_len);
+	g2d_free((void *)g2d_mem[sel].virt_addr);
 	memset(&g2d_mem[sel],0,sizeof(struct info_mem));
+}
 
 	return 0;
 }

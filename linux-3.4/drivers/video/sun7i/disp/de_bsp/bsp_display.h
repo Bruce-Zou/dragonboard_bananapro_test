@@ -47,14 +47,10 @@
 #include <linux/types.h>
 #include <linux/timer.h>
 #include <mach/irqs.h>
-
+#include <linux/sunxi_physmem.h>
 #include <linux/gpio.h>
 #include <linux/regulator/consumer.h>
 
-#include <linux/ion_sunxi.h>
-#include <linux/sync.h>
-#include <linux/sw_sync.h>
-#include <linux/file.h>
 
 
 typedef unsigned int __hdle;
@@ -184,6 +180,7 @@ extern __s32 BSP_disp_layer_request(__u32 sel, __disp_layer_work_mode_t mode);
 extern __s32 BSP_disp_layer_release(__u32 sel, __u32 hid);
 extern __s32 BSP_disp_layer_open(__u32 sel, __u32 hid);
 extern __s32 BSP_disp_layer_close(__u32 sel, __u32 hid);
+extern __s32 BSP_disp_layer_is_open(__u32 screen_id, __u32 hid);
 extern __s32 BSP_disp_layer_set_framebuffer(__u32 sel, __u32 hid,__disp_fb_t *fbinfo);
 extern __s32 BSP_disp_layer_get_framebuffer(__u32 sel, __u32 hid,__disp_fb_t*fbinfo);
 extern __s32 BSP_disp_layer_set_src_window(__u32 sel, __u32 hid,__disp_rect_t *regn);
@@ -285,9 +282,8 @@ extern __s32 BSP_disp_tv_set_src(__u32 sel, __disp_lcdc_src_t src);
 extern __s32 BSP_disp_tv_get_dac_status(__u32 sel, __u32 index);
 extern __s32 BSP_disp_tv_set_dac_source(__u32 sel, __u32 index, __disp_tv_dac_source source);
 extern __s32 BSP_disp_tv_get_dac_source(__u32 sel, __u32 index);
-extern __s32 BSP_disp_tv_suspend(void);
-extern __s32 BSP_disp_tv_resume(void);
-
+extern __s32 BSP_disp_store_tvec_reg(__u32 sel, __u32 addr);
+extern __s32 BSP_disp_restore_tvec_reg(__u32 sel ,__u32 addr);
 
 extern __s32 BSP_disp_hdmi_open(__u32 sel);
 extern __s32 BSP_disp_hdmi_close(__u32 sel);
@@ -343,7 +339,6 @@ extern __s32 BSP_disp_sprite_block_open(__u32 sel, __u32 hid);
 extern __s32 BSP_disp_sprite_block_close(__u32 sel, __u32 hid);
 extern __s32 BSP_disp_sprite_block_set_para(__u32 sel, __u32 hid,__disp_sprite_block_para_t *para);
 extern __s32 BSP_disp_sprite_block_get_para(__u32 sel, __u32 hid,__disp_sprite_block_para_t *para);
-extern int TCON_get_open_status(__u32 sel);
 
 #ifdef __LINUX_OSAL__
 __s32 Display_set_fb_timming(__u32 sel);

@@ -154,7 +154,15 @@ __s32 Hdmi_hal_main_task(void)
 __s32 Hdmi_hal_init(void)
 {	
     //hdmi_audio_t audio_para;
-    
+	__disp_hdmi_func disp_func;
+	//disp_func.hdmi_open = Hdmi_open;
+	//disp_func.hdmi_close = Hdmi_close;
+	disp_func.hdmi_set_mode = Hdmi_hal_set_display_mode;
+	disp_func.hdmi_mode_support = Hdmi_hal_mode_support;
+	disp_func.hdmi_get_HPD_status = Hdmi_hal_get_HPD;
+	disp_func.hdmi_set_pll = Hdmi_hal_set_pll;
+	disp_func.hdmi_get_input_csc = Hmdi_hal_get_input_csc;
+	//BSP_disp_set_hdmi_func(&disp_func);
 	hdmi_core_initial();
     audio_info.channel_num  = 2;
 #ifdef __BOOT_OSAL__

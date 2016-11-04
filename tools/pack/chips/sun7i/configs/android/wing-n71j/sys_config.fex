@@ -93,7 +93,7 @@ standby_mode		= 1
 ;-------------------------------------------------------------------------------
 [dram_para]
 dram_baseaddr       = 0x40000000
-dram_clk            = 384
+dram_clk            = 432
 dram_type           = 3
 dram_rank_num       = 0xffffffff
 dram_chip_density   = 0xffffffff
@@ -434,11 +434,11 @@ lcd1_hue                = 50
 ;-------------------------------------------------------------------------------
 [lcd0_para]
 lcd_used                = 1
-lcd_driver_name         = "default_lcd"
+
 lcd_x                   = 1024
 lcd_y                   = 600
 lcd_width           	= 155
-lcd_height          	= 86
+lcd_height          	= 85
 lcd_dclk_freq 		= 60
 lcd_pwm_not_used        = 0
 lcd_pwm_ch              = 0
@@ -606,12 +606,7 @@ lcdclk                  = port:PH24<2><0><default><default>
 lcdde                   = port:PH25<2><0><default><default>
 lcdhsync                = port:PH26<2><0><default><default>
 lcdvsync                = port:PH27<2><0><default><default>
-;-------------------------------------------------------------------------------
-;pwm configure
-;-------------------------------------------------------------------------------
-[pwm0_para]
-pwm_used = 1
-pwm_positive            = port:PB02<2><0><default><default>
+
 ;-------------------------------------------------------------------------------
 ;tv out dac configuration
 ;dacx_src:  0:composite; 1:luma; 2:chroma; 4:Y; 5:Pb; 6: Pr; 7:none
@@ -628,33 +623,6 @@ dac3_src                = 0
 ;----------------------------------------------------------------------------------
 [hdmi_para]
 hdmi_used               = 1
-hdcp_enable             = 0
-
-[i2s2_para]
-i2s_channel             = 2
-i2s_master              = 4
-i2s_select              = 1
-audio_format            = 1
-signal_inversion        = 1
-over_sample_rate        = 256
-sample_resolution       = 16
-word_select_size        = 32
-pcm_sync_period         = 256
-msb_lsb_first           = 0
-sign_extend             = 0
-slot_index              = 0
-slot_width              = 16
-frame_width             = 1
-tx_data_mode            = 0
-rx_data_mode            = 0
-;i2s_mclk            	= port:PB05<2><1><default><default>
-;i2s_bclk            	= port:PB06<2><1><default><default>
-;i2s_lrclk           	= port:PB07<2><1><default><default>
-;i2s_dout0           	= port:PB08<2><1><default><default>
-;i2s_dout1           	=
-;i2s_dout2           	=
-;i2s_dout3           	=
-;i2s_din             	= port:PB12<2><1><default><default>
 
 
 [camera_list_para]
@@ -703,28 +671,28 @@ csi_used            = 1
 
 csi_dev_qty         = 2
 csi_stby_mode       = 0
-csi_mname           = "gc2035"
+csi_mname           = "gc0308"
 csi_twi_id          = 1
-csi_twi_addr        = 0x78
+csi_twi_addr        = 0x42
 csi_if              = 0
 csi_vflip           = 0
 csi_hflip           = 0
 csi_iovdd           = "axp20_pll"
-csi_avdd            = "axp20_pll"
+csi_avdd            = ""
 csi_dvdd            = ""
 csi_vol_iovdd       = 2800
 csi_vol_dvdd        = 
 csi_vol_avdd        = 
 csi_flash_pol       = 0
 
-csi_mname_b         = "gc0308"
+csi_mname_b         = "gc2035"
 csi_twi_id_b        = 1
-csi_twi_addr_b      = 0x42
+csi_twi_addr_b      = 0x78
 csi_if_b            = 0
 csi_vflip_b         = 0
 csi_hflip_b         = 0
 csi_iovdd_b         = "axp20_pll"
-csi_avdd_b          = ""
+csi_avdd_b          = "axp20_pll"
 csi_dvdd_b          = ""
 csi_vol_iovdd_b     = 2800
 csi_vol_avdd_b      = 
@@ -743,14 +711,14 @@ csi_d4              = port:PE08<3><default><default><default>
 csi_d5              = port:PE09<3><default><default><default>
 csi_d6              = port:PE10<3><default><default><default>
 csi_d7              = port:PE11<3><default><default><default>
-csi_reset           = port:PH13<1><default><default><0>
+csi_reset           = port:PH14<1><default><default><0>
 csi_power_en        = port:PH16<1><default><default><0>
-csi_stby            = port:PH18<1><default><default><0>
+csi_stby            = port:PH19<1><default><default><0>
 csi_flash           =
 csi_af_en           =
-csi_reset_b         = port:PH14<1><default><default><0>
+csi_reset_b         = port:PH13<1><default><default><0>
 csi_power_en_b      = port:PH16<1><default><default><0>
-csi_stby_b          = port:PH19<1><default><default><0>
+csi_stby_b          = port:PH18<1><default><default><0>
 csi_flash_b         =
 csi_af_en_b         =
 
@@ -1408,9 +1376,9 @@ pmu_bat_para15           = 89
 pmu_bat_para16           = 98
 
 pmu_usbvol_limit         = 1
-pmu_usbcur_limit         = 0
+pmu_usbcur_limit         = 900
 pmu_usbvol               = 4000
-pmu_usbcur               = 900
+pmu_usbcur               = 0
 
 pmu_usbvol_pc            = 4400
 pmu_usbcur_pc            = 500
@@ -1462,6 +1430,7 @@ key_max			    = 40
 ;----------------------------------------------------------------------------------
 [dvfs_table]
 max_freq = 912000000
+normal_freq = 720000000
 min_freq = 60000000
 
 LV_count = 8

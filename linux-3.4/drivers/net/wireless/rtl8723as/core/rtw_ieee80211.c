@@ -1353,37 +1353,32 @@ void rtw_macaddr_cfg(u8 *mac_addr)
 	DBG_871X("rtw_macaddr_cfg MAC Address  = "MAC_FMT"\n", MAC_ARG(mac_addr));
 }
 
-void dump_ies(u8 *buf, u32 buf_len)
-{
+void dump_ies(u8 *buf, u32 buf_len) {
 	u8* pos = (u8*)buf;
 	u8 id, len;
-
+	
 	while(pos-buf<=buf_len){
 		id = *pos;
 		len = *(pos+1);
 
 		DBG_871X("%s ID:%u, LEN:%u\n", __FUNCTION__, id, len);
-		dump_wps_ie(pos, len);
 		#ifdef CONFIG_P2P
 		dump_p2p_ie(pos, len);
-		#ifdef CONFIG_WFD
-		dump_wfd_ie(pos, len);
 		#endif
-		#endif
+		dump_wps_ie(pos, len);
 
 		pos+=(2+len);
-	}
+	}	
 }
 
-void dump_wps_ie(u8 *ie, u32 ie_len)
-{
+void dump_wps_ie(u8 *ie, u32 ie_len) {
 	u8* pos = (u8*)ie;
 	u16 id;
 	u16 len;
 
 	u8 *wps_ie;
 	uint wps_ielen;
-
+	
 	wps_ie = rtw_get_wps_ie(ie, ie_len, NULL, &wps_ielen);
 	if(wps_ie != ie || wps_ielen == 0)
 		return;
@@ -1396,7 +1391,7 @@ void dump_wps_ie(u8 *ie, u32 ie_len)
 		DBG_871X("%s ID:0x%04x, LEN:%u\n", __FUNCTION__, id, len);
 
 		pos+=(4+len);
-	}
+	}	
 }
 
 #ifdef CONFIG_P2P
@@ -1760,29 +1755,6 @@ void rtw_WLAN_BSSID_EX_remove_p2p_attr(WLAN_BSSID_EX *bss_ex, u8 attr_id)
 #endif //CONFIG_P2P
 
 #ifdef CONFIG_WFD
-void dump_wfd_ie(u8 *ie, u32 ie_len)
-{
-	u8* pos = (u8*)ie;
-	u8 id;
-	u16 len;
-
-	u8 *wfd_ie;
-	uint wfd_ielen;
-
-	if(rtw_get_wfd_ie(ie, ie_len, NULL, &wfd_ielen) == _FALSE)
-		return;
-
-	pos+=6;
-	while(pos-ie < ie_len){
-		id = *pos;
-		len = RTW_GET_BE16(pos+1);
-
-		DBG_871X("%s ID:%u, LEN:%u\n", __FUNCTION__, id, len);
-
-		pos+=(3+len);
-	}
-}
-
 int rtw_get_wfd_ie(u8 *in_ie, int in_len, u8 *wfd_ie, uint *wfd_ielen)
 {
 	int match;
